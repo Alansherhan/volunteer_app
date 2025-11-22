@@ -13,11 +13,11 @@ class SignupScreen extends StatelessWidget {
         // height: double.infinity,
         // height: double.infinity,
         decoration: BoxDecoration(
-          image: DecorationImage(
-            alignment: AlignmentGeometry.topCenter,
-            fit: BoxFit.cover,
-            image: AssetImage('assets/images/pexels-artempodrez-7233099.jpg'),
-          ),
+          // image: DecorationImage(
+          //   alignment: AlignmentGeometry.topCenter,
+          //   fit: BoxFit.cover,
+          //   image: AssetImage('assets/images/pexels-artempodrez-7233099.jpg'),
+          // ),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),

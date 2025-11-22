@@ -59,7 +59,7 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                 PopupMenuButton<String>(
                   // We use your original icon and size
                   iconSize: 32,
-                  icon: const Icon(Icons.account_circle),
+                  // icon: const Icon(Icons.account_circle),
 
                   // This function is called when a user selects an item from the menu
                   onSelected: (String value) {

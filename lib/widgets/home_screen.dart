@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:volunteer_app/components/layout/header.dart';
 import 'package:volunteer_app/screens/Dashboard.dart';
 import 'package:volunteer_app/screens/Map.dart';
+import 'package:volunteer_app/screens/Tasks.dart';
+import 'package:volunteer_app/screens/account_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,18 +17,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _pages = [
     const Dashboard(),
+    const Tasks(),
     const Map(),
-    const Center(child: Text('History')),
-    const Center(child: Text('Account')),
+    const Account(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 224, 222, 222),
       appBar: Header(),
       body: _pages[_currentIndex], // Display the selected page
       bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: Colors.amber,
+        selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
         currentIndex: _currentIndex, // Highlight the current tab
         onTap: (index) {
@@ -40,12 +43,12 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'DashBoard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.near_me_sharp),
-            label: 'Map',
+            icon: Icon(Icons.history_toggle_off),
+            label: 'Tasks',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history_toggle_off),
-            label: 'History',
+            icon: Icon(Icons.near_me_sharp),
+            label: 'Map',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_circle),

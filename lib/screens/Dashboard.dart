@@ -10,31 +10,284 @@ class Dashboard extends StatefulWidget {
 class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.black),
-          color: (Colors.blue),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Assigned Task',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  fontSize: 20,
+    return Container(
+      child: ListView(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.blue,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Assigned Task',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 20,
+                      ),
+                    ),
+                    Icon(
+                      Icons.assignment_turned_in_outlined,
+                      color: Colors.white,
+                    ),
+                  ],
                 ),
               ),
-              Icon(Icons.assignment_turned_in_outlined, color: Colors.white),
-            ],
+            ),
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.all(12),
+              ),
+              onPressed: () {},
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Delivery Task #V1234',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                          fontSize: 20,
+                        ),
+                      ),
+                      Text(
+                        'Location:',
+                        style: TextStyle(color: Colors.grey, fontSize: 15),
+                      ),
+                      Text(
+                        'Location:14 Elm St',
+                        style: TextStyle(color: Colors.grey, fontSize: 15),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      ElevatedButton(
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            118,
+                            224,
+                            122,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: EdgeInsets.all(8),
+                        ),
+                        onPressed: () {},
+                        child: Text(
+                          'View Map',
+                          style: TextStyle(color: Colors.black, fontSize: 14),
+                        ),
+                      ),
+                      ElevatedButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            90,
+                            132,
+                            204,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: EdgeInsets.all(12),
+                        ),
+                        onPressed: () {},
+                        child: Text(
+                          'Start Task',
+                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          //SECOND ELEVETED BUTTON
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.all(12),
+              ),
+              onPressed: () {},
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pickup Task #P5678',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                          fontSize: 20,
+                        ),
+                      ),
+                      Text(
+                        'Location:',
+                        style: TextStyle(color: Colors.grey, fontSize: 15),
+                      ),
+                      Text(
+                        'Community Center',
+                        style: TextStyle(color: Colors.grey, fontSize: 15),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      ElevatedButton(
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            118,
+                            224,
+                            122,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: EdgeInsets.all(8),
+                        ),
+                        onPressed: () {},
+                        child: Text(
+                          'View Map',
+                          style: TextStyle(color: Colors.black, fontSize: 14),
+                        ),
+                      ),
+                      ElevatedButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            90,
+                            132,
+                            204,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: EdgeInsets.all(12),
+                        ),
+                        onPressed: () {},
+                        child: Text(
+                          'Start Task',
+                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          //THIRD ELEVETED BUTTON
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.all(12),
+              ),
+              onPressed: () {},
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Field Visit #9101',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                          fontSize: 20,
+                        ),
+                      ),
+                      Text(
+                        'Location:',
+                        style: TextStyle(color: Colors.grey, fontSize: 15),
+                      ),
+                      Text(
+                        'Location:14 Elm St',
+                        style: TextStyle(color: Colors.grey, fontSize: 15),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      ElevatedButton(
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            118,
+                            224,
+                            122,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: EdgeInsets.all(8),
+                        ),
+                        onPressed: () {},
+                        child: Text(
+                          'View Map',
+                          style: TextStyle(color: Colors.black, fontSize: 14),
+                        ),
+                      ),
+                      ElevatedButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            90,
+                            132,
+                            204,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: EdgeInsets.all(12),
+                        ),
+                        onPressed: () {},
+                        child: Text(
+                          'Start Task',
+                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
