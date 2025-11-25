@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:volunteer_app/screens/dashboard_screen/task_screen.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -80,38 +81,19 @@ class _DashboardState extends State<Dashboard> {
                     children: [
                       ElevatedButton(
                         style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          backgroundColor: const Color.fromARGB(
-                            255,
-                            118,
-                            224,
-                            122,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: EdgeInsets.all(8),
-                        ),
-                        onPressed: () {},
-                        child: Text(
-                          'View Map',
-                          style: TextStyle(color: Colors.black, fontSize: 14),
-                        ),
-                      ),
-                      ElevatedButton(
-                        style: TextButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(
-                            255,
-                            90,
-                            132,
-                            204,
-                          ),
+                          backgroundColor: Colors.blue,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           padding: EdgeInsets.all(12),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => const TaskScreen(),
+                            ),
+                          );
+                        },
                         child: Text(
                           'Start Task',
                           style: TextStyle(color: Colors.white, fontSize: 14),
@@ -162,32 +144,7 @@ class _DashboardState extends State<Dashboard> {
                     children: [
                       ElevatedButton(
                         style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          backgroundColor: const Color.fromARGB(
-                            255,
-                            118,
-                            224,
-                            122,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: EdgeInsets.all(8),
-                        ),
-                        onPressed: () {},
-                        child: Text(
-                          'View Map',
-                          style: TextStyle(color: Colors.black, fontSize: 14),
-                        ),
-                      ),
-                      ElevatedButton(
-                        style: TextButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(
-                            255,
-                            90,
-                            132,
-                            204,
-                          ),
+                          backgroundColor: Colors.blue,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -244,32 +201,7 @@ class _DashboardState extends State<Dashboard> {
                     children: [
                       ElevatedButton(
                         style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          backgroundColor: const Color.fromARGB(
-                            255,
-                            118,
-                            224,
-                            122,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: EdgeInsets.all(8),
-                        ),
-                        onPressed: () {},
-                        child: Text(
-                          'View Map',
-                          style: TextStyle(color: Colors.black, fontSize: 14),
-                        ),
-                      ),
-                      ElevatedButton(
-                        style: TextButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(
-                            255,
-                            90,
-                            132,
-                            204,
-                          ),
+                          backgroundColor: Colors.blue,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),

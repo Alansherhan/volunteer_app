@@ -134,6 +134,7 @@ class _AccountState extends State<Account> {
                 child: Column(
                   children: [
                     SwitchListTile(
+                      activeColor: Colors.blue,
                       value: val,
                       onChanged: (bool? value) {
                         setState(() {
@@ -149,11 +150,13 @@ class _AccountState extends State<Account> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 91, 235, 245),
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                   onPressed: () {
-                    LoginScreen();
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                    );
                   },
                   child: Text(
                     'Log Out',

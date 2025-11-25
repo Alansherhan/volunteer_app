@@ -1,14 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:volunteer_app/screens/account_page.dart';
+import 'dart:io';
 
-void main() {
-  runApp(
-    const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: EditProfileScreen(),
-    ),
-  );
-}
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:volunteer_app/screens/account_page.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -19,22 +13,37 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   // Using the primary color from your screenshot (Teal/Cyan)
-  final Color primaryColor = const Color(0xFF26A69A);
+  final Color primaryColor = const Color.fromARGB(255, 139, 231, 216);
   final Color secondaryColor = const Color(0xFFE0F2F1);
 
   // Form Controllers (Pre-filled with data from your image)
-  final TextEditingController _nameController = TextEditingController(
-    text: "Rajesh Kumar",
-  );
+  final TextEditingController _nameController = TextEditingController(text: "");
   final TextEditingController _roleController = TextEditingController(
-    text: "Registered Volunteer",
+    text: " ",
   );
   final TextEditingController _emailController = TextEditingController(
-    text: "rajesh.kumar@example.com",
+    text: "",
   );
   final TextEditingController _phoneController = TextEditingController(
-    text: "+91 98765 43210",
+    text: "",
   );
+
+  File? _selectedImage;
+
+  // 1. Function to pick image from gallery
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+
+    // Pick an image
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    // Update the UI if the user successfully picked an image
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,9 +95,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     height: 120,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: primaryColor, width: 4),
+                      border: Border.all(color: Colors.blue, width: 4),
                     ),
                   ),
+
+                  _selectedImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadiusGeometry.circular(100),
+                          child: Image.file(
+                            _selectedImage!,
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : const Icon(Icons.account_circle_rounded, size: 120),
                   Positioned(
                     bottom: 0,
                     right: 0,
@@ -96,13 +117,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       height: 35,
                       width: 35,
                       decoration: BoxDecoration(
-                        color: primaryColor,
+                        color: Colors.blue,
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
                       child: InkWell(
+                        onTap: () {
+                          _pickImage();
+                        },
                         child: const Icon(
-                          Icons.camera_alt,
+                          Icons.edit,
                           color: Colors.white,
                           size: 20,
                         ),
@@ -123,7 +147,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             const SizedBox(height: 20),
             _buildTextField(
-              "Role / Title",
+              "Skill",
               "Enter your role",
               _roleController,
               Icons.work_outline,
@@ -154,7 +178,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   // Save Logic
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
+                  backgroundColor: Colors.blue,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),

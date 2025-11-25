@@ -10,6 +10,7 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        alignment: Alignment.center,
         // width: double.infinity,
         // height: double.infinity,
         // height: double.infinity,
@@ -22,15 +23,32 @@ class LoginScreen extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(30.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: ListView(
             children: [
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    Icon(Icons.account_circle, size: 95),
-                    Text('LOGIN'),
+                    SizedBox(height: 48),
+                    Image(image: AssetImage('assets/images/logo4.png')),
+                    Text(
+                      'Volunteer',
+                      style: TextStyle(
+                        fontSize: 38,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Companion App',
+                      style: TextStyle(
+                        fontSize: 38,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Making a diffrenece,Together',
+                      style: TextStyle(fontSize: 16.5, color: Colors.grey),
+                    ),
                     SizedBox(height: 24),
                     TextFormField(
                       decoration: InputDecoration(
@@ -64,6 +82,12 @@ class LoginScreen extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            116,
+                            188,
+                            247,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadiusGeometry.circular(8),
                           ),
@@ -75,7 +99,13 @@ class LoginScreen extends StatelessWidget {
                             ),
                           );
                         },
-                        child: Text('LOG IN'),
+                        child: Text(
+                          'LOG IN',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ],

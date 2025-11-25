@@ -36,9 +36,9 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                   style: TextStyle(
                     color: const Color.fromARGB(
                       255,
-                      4,
-                      212,
-                      245,
+                      66,
+                      187,
+                      177,
                     ).withOpacity(1.0),
                     fontWeight: FontWeight.bold,
                     fontSize: 24,
