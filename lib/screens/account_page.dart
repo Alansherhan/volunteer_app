@@ -18,22 +18,10 @@ class Account extends StatefulWidget {
 }
 
 class _AccountState extends State<Account> {
-  File? _selectedImage;
-
-  // Function to pick image from gallery
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-
-    if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-      });
-    }
-  }
+  File? _selectedImage; // Image picked locally
+  String? _serverImagePath; // Image path from Server DB
 
   bool val = true;
-
   String userName = 'Loading...';
   bool isLoading = true;
 
@@ -43,25 +31,26 @@ class _AccountState extends State<Account> {
     _fetchUserProfile();
   }
 
+  // Function to pick image (Optional, if you want to allow changing it here too)
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+      // Note: If you pick an image here, you usually want to upload it immediately
+      // or pass it to the edit screen. For now, this just updates the UI locally.
+    }
+  }
+
   Future<void> _fetchUserProfile() async {
-    const profile = '$kBaseUrl/public/profile';
+    const profileEndpoint = '$kBaseUrl/public/profile';
     try {
       final prefs = await SharedPreferences.getInstance();
-
-      // 🔍 DEBUG: Check what's in storage
-      print('==================== ACCOUNT PAGE INIT ====================');
-      print('All keys: ${prefs.getKeys()}');
-      print('kTokenStorageKey value: "$kTokenStorageKey"');
-
-      // Try both possible token keys
       final token =
           prefs.getString(kTokenStorageKey) ?? prefs.getString('auth_token');
-
-      print('Token found: ${token != null}');
-      if (token != null) {
-        print('Token: ${token.substring(0, 20)}...');
-      }
-      print('=======================================================');
 
       if (token == null || token.isEmpty) {
         setState(() {
@@ -72,20 +61,22 @@ class _AccountState extends State<Account> {
       }
 
       final response = await http.get(
-        Uri.parse(profile),
+        Uri.parse(profileEndpoint),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
 
-      print('Profile API Response status: ${response.statusCode}');
-      print('Profile API Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final userData =
+            data['data']; // Access the 'data' object inside response
+
         setState(() {
-          userName = data['data']['name'] ?? 'User';
+          userName = userData['name'] ?? 'User';
+          // 1. GET IMAGE PATH FROM SERVER
+          _serverImagePath = userData['profileImage'];
           isLoading = false;
         });
       } else {
@@ -103,6 +94,60 @@ class _AccountState extends State<Account> {
     }
   }
 
+  Widget _getProfileImageWidget() {
+    // 1. If user just picked a new photo from gallery, show that
+    if (_selectedImage != null) {
+      return Image.file(_selectedImage!, fit: BoxFit.cover);
+    }
+
+    // 2. If we have a valid image path from the server, show that
+    if (_serverImagePath != null && _serverImagePath!.isNotEmpty) {
+      // FIX: Replace backslashes (\) with forward slashes (/) for URLs
+      final cleanPath = _serverImagePath!.replaceAll('\\', '/');
+
+      // Combine Base URL + Path
+      // Example: http://192.168.1.5:3000 + / + uploads/image.jpg
+      final fullImageUrl = '$kImageUrl/$cleanPath';
+
+      print("Loading Image from: $fullImageUrl"); // Debug print
+
+      return Image.network(
+        fullImageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // If image fails to load (e.g. 404), show icon
+          return const Icon(Icons.broken_image, size: 50, color: Colors.grey);
+        },
+      );
+    }
+
+    // 3. Default fallback (if no image exists)
+    return const Icon(
+      Icons.account_circle_rounded,
+      size: 120,
+      color: Colors.grey,
+    );
+  }
+
+  // 2. HELPER TO DECIDE WHICH IMAGE TO SHOW
+  ImageProvider _getProfileImage() {
+    // Priority 1: User just picked a new image from gallery
+    if (_selectedImage != null) {
+      return FileImage(_selectedImage!);
+    }
+
+    // Priority 2: User has an image saved on the server
+    if (_serverImagePath != null && _serverImagePath!.isNotEmpty) {
+      // Clean path (fix backslashes for Windows servers)
+      final cleanPath = _serverImagePath!.replaceAll('\\', '/');
+      // Construct full URL
+      return NetworkImage('$kImageUrl/$cleanPath');
+    }
+
+    // Priority 3: Fallback (This won't be reached due to the check in build, but good for safety)
+    return const AssetImage('assets/logo3.png');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -117,22 +162,61 @@ class _AccountState extends State<Account> {
                   children: [
                     const Text('Profile', style: TextStyle(fontSize: 30)),
                     const SizedBox(height: 10),
+
+                    // --- 3. UPDATED IMAGE WIDGET ---
                     InkWell(
                       onTap: () {
-                        _pickImage();
+                        // _pickImage(); // Optional: Unlock this if you want to pick image here
                       },
-                      child: _selectedImage != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(100),
-                              child: Image.file(
-                                _selectedImage!,
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : const Icon(Icons.account_circle_rounded, size: 120),
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors
+                              .grey[200], // Background for transparent images
+                          border: Border.all(
+                            color: Colors.blue.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(100),
+                          child:
+                              _selectedImage == null &&
+                                  (_serverImagePath == null ||
+                                      _serverImagePath!.isEmpty)
+                              ? const Icon(
+                                  Icons.account_circle_rounded,
+                                  size: 120,
+                                  color: Colors.grey,
+                                )
+                              : Image(
+                                  image: _getProfileImage(),
+                                  fit: BoxFit.cover,
+                                  width: 120,
+                                  height: 120,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(
+                                      Icons.broken_image,
+                                      size: 50,
+                                    );
+                                  },
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
+                                        );
+                                      },
+                                ),
+                        ),
+                      ),
                     ),
+
+                    // --------------------------------
+                    const SizedBox(height: 10),
                     Text(userName, style: const TextStyle(fontSize: 30)),
                     const Text(
                       'Registered Volunteer',
@@ -152,12 +236,16 @@ class _AccountState extends State<Account> {
                     ListTile(
                       leading: const Icon(Icons.edit),
                       title: const Text('Edit Profile'),
-                      onTap: () {
-                        Navigator.of(context).push(
+                      onTap: () async {
+                        // 4. REFRESH DATA ON RETURN
+                        // We wait for the Edit Screen to close...
+                        await Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (context) => const EditProfileScreen(),
                           ),
                         );
+                        // ...and then fetch the profile again to show updates
+                        _fetchUserProfile();
                       },
                     ),
                     ListTile(
@@ -174,6 +262,8 @@ class _AccountState extends State<Account> {
                   ],
                 ),
               ),
+
+              // ... Rest of your code (Activity, Settings, Logout) stays the same ...
               const SizedBox(height: 20),
               const Text(
                 'My Activity',

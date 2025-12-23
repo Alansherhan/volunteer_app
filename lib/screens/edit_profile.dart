@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:volunteer_app/env.dart';
 import 'package:volunteer_app/screens/account_page.dart';
+import 'package:http_parser/http_parser.dart'; // <--- ADD THIS
 
 class EditProfileScreen extends StatefulWidget {
   final String? userId; // Optional - will fetch from storage if not provided
@@ -18,6 +19,7 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+  String? _serverImagePath;
   final Color secondaryColor = const Color(0xFFE0F2F1);
 
   // Form Controllers
@@ -182,6 +184,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               userData['phoneNumber'] ?? userData['phone'] ?? '';
           _addressController.text = userData['address'] ?? '';
           _selectedSkill = userData['skill'];
+          _serverImagePath = userData['profileImage'];
 
           // IMPORTANT: Ensure we have the ID for the UPDATE step later
           if (_userId == null && userData['id'] != null) {
@@ -213,6 +216,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   // Save profile data to API using user ID
+  // Save profile data (Text + Image) using MultipartRequest
   Future<void> _saveProfile() async {
     // 1. Safety Check
     if (_userId == null) {
@@ -226,31 +230,62 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      // Use the correct token key we found earlier
+      // Get the valid token
       final token =
-          prefs.getString('jwt_token') ?? prefs.getString('auth_token');
+          prefs.getString(kTokenStorageKey) ?? prefs.getString('auth_token');
 
-      // 2. Prepare the Data Map (Standard JSON)
-      final Map<String, dynamic> bodyData = {
-        'name': _nameController.text,
-        'email': _emailController.text,
-        'address': _addressController.text,
-        // vital: match the key the server sent you ("phoneNumber")
-        'phoneNumber': _phoneController.text,
-        'skill': _selectedSkill ?? 'other',
-      };
-
-      print("Sending JSON Update: $bodyData");
-
-      // 3. Send the Request
-      final response = await http.put(
+      // 2. Create Multipart Request
+      // 'PUT' matches your router.put()
+      var request = http.MultipartRequest(
+        'PUT',
         Uri.parse('$kBaseUrl/public/update/$_userId'),
-        headers: {
-          'Content-Type': 'application/json', // Required for JSON
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(bodyData),
       );
+
+      // 3. Add Headers
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        // Note: Do NOT set 'Content-Type': 'application/json' here.
+        // Flutter sets the correct multipart boundary automatically.
+      });
+
+      // 4. Add Text Fields
+      // Validating and adding only if not empty to be safe
+      if (_nameController.text.isNotEmpty) {
+        request.fields['name'] = _nameController.text;
+      }
+      if (_emailController.text.isNotEmpty) {
+        request.fields['email'] = _emailController.text;
+      }
+      if (_addressController.text.isNotEmpty) {
+        request.fields['address'] = _addressController.text;
+      }
+      if (_phoneController.text.isNotEmpty) {
+        request.fields['phoneNumber'] = _phoneController.text;
+      }
+      request.fields['skill'] = _selectedSkill ?? 'other';
+
+      // 5. Add Image File (If selected)
+      if (_selectedImage != null) {
+        // We use fromPath because it's easier and safer
+        var multipartFile = await http.MultipartFile.fromPath(
+          'profile_image',
+          _selectedImage!.path,
+
+          // 👇 THIS IS THE FIX: Explicitly tell the server this is a JPEG image
+          contentType: MediaType('image', 'jpeg'),
+        );
+
+        request.files.add(multipartFile);
+      }
+
+      print("Sending Multipart Request...");
+      print("Fields: ${request.fields}");
+      if (_selectedImage != null)
+        print("File attached: ${_selectedImage!.path}");
+
+      // 6. Send Request
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
 
       print("Status Code: ${response.statusCode}");
       print("Response Body: ${response.body}");
@@ -267,7 +302,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } catch (e) {
       print("Save Error: $e");
-      _showErrorDialog('Error: $e');
+      _showErrorDialog('Connection Error: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -375,6 +410,60 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  Widget _buildProfileImage() {
+    // 1. If user just picked a local image, show that
+    if (_selectedImage != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(100),
+        child: Image.file(
+          _selectedImage!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
+    // 2. If server has an image, show that
+    if (_serverImagePath != null && _serverImagePath!.isNotEmpty) {
+      // Fix backslashes for URL (Windows/Nodejs issue)
+      final cleanPath = _serverImagePath!.replaceAll('\\', '/');
+
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(100),
+        child: Image.network(
+          '$kImageUrl/$cleanPath', // Combine Base URL + Image Path
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            // Fallback if image fails to load
+            return const Icon(
+              Icons.account_circle_rounded,
+              size: 120,
+              color: Colors.grey,
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const SizedBox(
+              width: 120,
+              height: 120,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          },
+        ),
+      );
+    }
+
+    // 3. Default Icon (if no image exists)
+    return const Icon(
+      Icons.account_circle_rounded,
+      size: 120,
+      color: Colors.grey, // Optional: makes it look better
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -427,20 +516,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             border: Border.all(color: Colors.blue, width: 4),
                           ),
                         ),
-                        _selectedImage != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(100),
-                                child: Image.file(
-                                  _selectedImage!,
-                                  width: 120,
-                                  height: 120,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.account_circle_rounded,
-                                size: 120,
-                              ),
+                        // ✅ CORRECT: The function handles everything
+                        _buildProfileImage(),
                         Positioned(
                           bottom: 0,
                           right: 0,
@@ -515,9 +592,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         _selectedSkill,
                         [
                           'police',
-                          'NSS',
+                          'nss',
                           'fire force',
-                          'NCC',
+                          'ncc',
                           'student police',
                           'scout',
                           'other',

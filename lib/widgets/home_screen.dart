@@ -17,8 +17,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _pages = [
     const Dashboard(),
-    const Tasks(),
     const Map(),
+    const Tasks(),
     const Account(),
   ];
 
@@ -43,13 +43,14 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'DashBoard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history_toggle_off),
-            label: 'Tasks',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.near_me_sharp),
             label: 'Map',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history_toggle_off),
+            label: 'Tasks',
+          ),
+
           BottomNavigationBarItem(
             icon: Icon(Icons.account_circle),
             label: 'Account',

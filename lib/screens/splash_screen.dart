@@ -32,7 +32,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(
-      'token',
+      "$kTokenStorageKey",
     ); // or use kTokenStorageKey if defined in Env
 
     print('Token: $token'); // Add this

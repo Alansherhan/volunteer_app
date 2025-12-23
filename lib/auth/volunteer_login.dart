@@ -16,14 +16,22 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   String email = '';
+  String role = 'volunteer';
   String password = '';
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  Future<void> _onLoginPressed(String email, String password) async {
+  Future<void> _onLoginPressed(
+    String email,
+    String password,
+    String role,
+  ) async {
     // Validate inputs
     if (email.isEmpty || password.isEmpty) {
       _showErrorDialog('Please enter both email and password');
+      return;
+    } else if (role.isEmpty) {
+      _showErrorDialog('User role is not selected');
       return;
     }
 
@@ -36,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final response = await http.post(
         Uri.parse('$kBaseUrl/public/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
+        body: jsonEncode({'email': email, 'password': password, 'role': role}),
       );
 
       if (response.statusCode == 200) {
@@ -75,8 +83,19 @@ class _LoginScreenState extends State<LoginScreen> {
           await prefs.setString('user_id', userId);
         }
 
+        String? role;
+        if (data['role'] != null) {
+          role = data['role'].toString();
+          if (role != null) {
+            await prefs.setString('role', role);
+          }
+          if (role == 'volunteer') {
+            return;
+          }
+        }
+
         // Save alternate token key for Edit Profile compatibility
-        await prefs.setString('auth_token', data['token'] ?? '');
+        await prefs.setString(kTokenStorageKey, data['token'] ?? '');
         await prefs.setString('email', email);
 
         // 🔍 DEBUG: Verify what was saved
@@ -294,7 +313,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 100,
                       height: 100,
                       child: Image(
-                        image: AssetImage('assets/images/logo3.png'),
+                        // alignment: AlignmentGeometry.topCenter,
+                        fit: BoxFit.cover,
+                        width: 10,
+                        height: 10,
+                        image: AssetImage('assets/images/logo5.png'),
                       ),
                     ),
                     const Text(
@@ -405,7 +428,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _isLoading
                             ? null
                             : () {
-                                _onLoginPressed(email, password);
+                                _onLoginPressed(email, password, role);
                               },
                         child: _isLoading
                             ? const SizedBox(

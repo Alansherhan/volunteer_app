@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:volunteer_app/auth/volunteer_login.dart';
 import 'package:volunteer_app/auth/volunteer_signup.dart';
+import 'package:volunteer_app/screens/notification_screen.dart';
 
 class Header extends StatelessWidget implements PreferredSizeWidget {
   const Header({super.key});
@@ -22,9 +23,9 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                 // ),
                 Image(
                   // alignment: AlignmentGeometry.topCenter,
-                  // fit: BoxFit.cover,
-                  //  width: 1,
-                  //   height: 1,
+                  fit: BoxFit.cover,
+                  width: 35,
+                  height: 35,
                   image: AssetImage('assets/images/logo3.png'),
                 ),
                 Text(
@@ -34,12 +35,7 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                 Text(
                   'App',
                   style: TextStyle(
-                    color: const Color.fromARGB(
-                      255,
-                      66,
-                      187,
-                      177,
-                    ).withOpacity(1.0),
+                    color: Colors.blue,
                     fontWeight: FontWeight.bold,
                     fontSize: 24,
                   ),
@@ -53,46 +49,50 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                   iconSize: 32,
                   icon: const Icon(Icons.notifications_active),
                   onPressed: () {
-                    // ...
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationScreen(),
+                      ),
+                    );
                   },
                 ),
-                PopupMenuButton<String>(
-                  // We use your original icon and size
-                  iconSize: 32,
-                  // icon: const Icon(Icons.account_circle),
+                // PopupMenuButton<String>(
+                //   // We use your original icon and size
+                //   iconSize: 32,
+                //   // icon: const Icon(Icons.account_circle),
 
-                  // This function is called when a user selects an item from the menu
-                  onSelected: (String value) {
-                    if (value == 'login') {
-                      // Navigate to the Login Screen
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                      );
-                    } else if (value == 'signup') {
-                      // Navigate to the Sign Up Screen
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const SignupScreen(),
-                        ),
-                      );
-                    }
-                  },
+                //   // This function is called when a user selects an item from the menu
+                //   onSelected: (String value) {
+                //     if (value == 'login') {
+                //       // Navigate to the Login Screen
+                //       Navigator.of(context).push(
+                //         MaterialPageRoute(
+                //           builder: (context) => const LoginScreen(),
+                //         ),
+                //       );
+                //     } else if (value == 'signup') {
+                //       // Navigate to the Sign Up Screen
+                //       Navigator.of(context).push(
+                //         MaterialPageRoute(
+                //           builder: (context) => const SignupScreen(),
+                //         ),
+                //       );
+                //     }
+                //   },
 
-                  // This builds the menu with your Login and Sign Up options
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(
-                          value: 'login',
-                          child: Text('Login'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'signup',
-                          child: Text('Sign Up'),
-                        ),
-                      ],
-                ),
+                //   // This builds the menu with your Login and Sign Up options
+                //   itemBuilder: (BuildContext context) =>
+                //       <PopupMenuEntry<String>>[
+                //         const PopupMenuItem<String>(
+                //           value: 'login',
+                //           child: Text('Login'),
+                //         ),
+                //         const PopupMenuItem<String>(
+                //           value: 'signup',
+                //           child: Text('Sign Up'),
+                //         ),
+                //       ],
+                // ),
               ],
             ),
           ],
