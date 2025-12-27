@@ -231,14 +231,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       // Get the valid token
-      final token =
-          prefs.getString(kTokenStorageKey) ?? prefs.getString('auth_token');
+      final token = prefs.getString(kTokenStorageKey);
 
       // 2. Create Multipart Request
       // 'PUT' matches your router.put()
       var request = http.MultipartRequest(
         'PUT',
-        Uri.parse('$kBaseUrl/public/update/$_userId'),
+        Uri.parse('$kBaseUrl/public/update'),
       );
 
       // 3. Add Headers
@@ -343,13 +342,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString(kTokenStorageKey);
 
       final response = await http.put(
         Uri.parse('$kBaseUrl/profile/update/$_userId'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
         body: jsonEncode({
           'name': _nameController.text,
@@ -464,6 +463,57 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  ImageProvider _getProfileImage() {
+    // Priority 1: User just picked a new image from gallery
+    if (_selectedImage != null) {
+      return FileImage(_selectedImage!);
+    }
+
+    // Priority 2: User has an image saved on the server
+    if (_serverImagePath != null && _serverImagePath!.isNotEmpty) {
+      // Clean path (fix backslashes for Windows servers)
+      final cleanPath = _serverImagePath!.replaceAll('\\', '/');
+      // Construct full URL
+      return NetworkImage('$kImageUrl/$cleanPath');
+    }
+
+    // Priority 3: Fallback (This won't be reached due to the check in build, but good for safety)
+    return const AssetImage('assets/logo3.png');
+  }
+
+  void _previewImage() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false, // Allows the background to remain visible
+        barrierDismissible: true,
+        barrierColor: Colors.black.withOpacity(0.7), // Dims the background
+        pageBuilder: (context, _, __) {
+          return Center(
+            child: Dialog(
+              backgroundColor:
+                  Colors.transparent, // Keeps the focus on the image
+              insetPadding: const EdgeInsets.all(10),
+              child: Hero(
+                tag: 'profile-image', // Must match your source tag exactly
+                child: Container(
+                  width: double.infinity,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: (_getProfileImage()),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -506,40 +556,51 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 children: [
                   // Profile Image Section
                   Center(
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.blue, width: 4),
-                          ),
-                        ),
-                        // ✅ CORRECT: The function handles everything
-                        _buildProfileImage(),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            height: 35,
-                            width: 35,
-                            decoration: BoxDecoration(
-                              color: Colors.blue,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
+                    child: InkWell(
+                      onTap: _previewImage,
+                      child: Stack(
+                        children: [
+                          Hero(
+                            tag: 'profile-image',
+                            child: Container(
+                              width: 128,
+                              height: 128,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.blue,
+                                  width: 4,
+                                ),
+                              ),
+                              child: _buildProfileImage(),
                             ),
-                            child: InkWell(
-                              onTap: _pickImage,
-                              child: const Icon(
-                                Icons.edit,
-                                color: Colors.white,
-                                size: 20,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              height: 35,
+                              width: 35,
+                              decoration: BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                              child: InkWell(
+                                onTap: _pickImage,
+                                child: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 30),

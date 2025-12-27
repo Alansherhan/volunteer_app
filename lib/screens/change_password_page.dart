@@ -43,8 +43,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     try {
       // 2. Get Token
       final prefs = await SharedPreferences.getInstance();
-      final token =
-          prefs.getString(kTokenStorageKey) ?? prefs.getString('auth_token');
+      final token = prefs.getString(kTokenStorageKey);
 
       if (token == null) {
         _showSnackBar("User not authenticated", isError: true);
@@ -56,8 +55,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       final response = await http.put(
         Uri.parse('$kBaseUrl/public/change-password'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
         body: jsonEncode({
           'oldPassword': currentPassword.trim(),

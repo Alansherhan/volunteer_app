@@ -9,6 +9,7 @@ import 'package:volunteer_app/env.dart';
 import 'package:volunteer_app/screens/change_password_page.dart';
 import 'package:volunteer_app/screens/edit_profile.dart';
 import 'package:http/http.dart' as http;
+// import 'package:animations/animations.dart';
 
 class Account extends StatefulWidget {
   const Account({super.key});
@@ -148,6 +149,39 @@ class _AccountState extends State<Account> {
     return const AssetImage('assets/logo3.png');
   }
 
+  void _previewImage() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false, // Allows the background to remain visible
+        barrierDismissible: true,
+        barrierColor: Colors.black.withOpacity(0.7), // Dims the background
+        pageBuilder: (context, _, __) {
+          return Center(
+            child: Dialog(
+              backgroundColor:
+                  Colors.transparent, // Keeps the focus on the image
+              insetPadding: const EdgeInsets.all(10),
+              child: Hero(
+                tag: 'profile-image', // Must match your source tag exactly
+                child: Container(
+                  width: double.infinity,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: _getProfileImage(),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -166,51 +200,54 @@ class _AccountState extends State<Account> {
                     // --- 3. UPDATED IMAGE WIDGET ---
                     InkWell(
                       onTap: () {
-                        // _pickImage(); // Optional: Unlock this if you want to pick image here
+                        _previewImage();
                       },
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors
-                              .grey[200], // Background for transparent images
-                          border: Border.all(
-                            color: Colors.blue.withOpacity(0.3),
-                            width: 1,
+                      child: Hero(
+                        tag: 'profile-image',
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors
+                                .grey[200], // Background for transparent images
+                            border: Border.all(
+                              color: Colors.blue.withOpacity(0.3),
+                              width: 1,
+                            ),
                           ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(100),
-                          child:
-                              _selectedImage == null &&
-                                  (_serverImagePath == null ||
-                                      _serverImagePath!.isEmpty)
-                              ? const Icon(
-                                  Icons.account_circle_rounded,
-                                  size: 120,
-                                  color: Colors.grey,
-                                )
-                              : Image(
-                                  image: _getProfileImage(),
-                                  fit: BoxFit.cover,
-                                  width: 120,
-                                  height: 120,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(
-                                      Icons.broken_image,
-                                      size: 50,
-                                    );
-                                  },
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                        if (loadingProgress == null)
-                                          return child;
-                                        return const Center(
-                                          child: CircularProgressIndicator(),
-                                        );
-                                      },
-                                ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(100),
+                            child:
+                                _selectedImage == null &&
+                                    (_serverImagePath == null ||
+                                        _serverImagePath!.isEmpty)
+                                ? const Icon(
+                                    Icons.account_circle_rounded,
+                                    size: 120,
+                                    color: Colors.grey,
+                                  )
+                                : Image(
+                                    image: _getProfileImage(),
+                                    fit: BoxFit.cover,
+                                    width: 120,
+                                    height: 120,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(
+                                        Icons.broken_image,
+                                        size: 50,
+                                      );
+                                    },
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
+                                          return const Center(
+                                            child: CircularProgressIndicator(),
+                                          );
+                                        },
+                                  ),
+                          ),
                         ),
                       ),
                     ),
