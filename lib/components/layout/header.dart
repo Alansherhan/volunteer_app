@@ -1,11 +1,50 @@
 import 'package:flutter/material.dart';
-
-import 'package:volunteer_app/auth/volunteer_login.dart';
-import 'package:volunteer_app/auth/volunteer_signup.dart';
+import 'dart:developer' as developer;
 import 'package:volunteer_app/screens/notification_screen.dart';
+import 'package:volunteer_app/services/notification_service.dart';
 
-class Header extends StatelessWidget implements PreferredSizeWidget {
+class Header extends StatefulWidget implements PreferredSizeWidget {
   const Header({super.key});
+
+  @override
+  State<Header> createState() => _HeaderState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(48);
+}
+
+class _HeaderState extends State<Header> {
+  int _unreadCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnreadCount();
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      print('>>> Header: Loading unread count...');
+      final count = await NotificationService.getUnreadCount();
+      print('>>> Header: Got unread count: $count');
+      if (mounted) {
+        setState(() {
+          _unreadCount = count;
+        });
+        print('>>> Header: State updated, _unreadCount = $_unreadCount');
+      }
+    } catch (e) {
+      print('>>> Header: Error loading unread count: $e');
+    }
+  }
+
+  void _navigateToNotifications() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const NotificationScreen()));
+    // Refresh count when returning from notifications screen
+    _loadUnreadCount();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,22 +56,17 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
           children: [
             Row(
               children: [
-                // Image(
-                //   image: AssetImage('assets/images/logo.jpg'),
-                //   height: 12,
-                // ),
                 Image(
-                  // alignment: AlignmentGeometry.topCenter,
                   fit: BoxFit.cover,
                   width: 35,
                   height: 35,
-                  image: AssetImage('assets/images/logo3.png'),
+                  image: const AssetImage('assets/images/logo3.png'),
                 ),
-                Text(
+                const Text(
                   'Volenteer',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
                 ),
-                Text(
+                const Text(
                   'App',
                   style: TextStyle(
                     color: Colors.blue,
@@ -42,57 +76,45 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
-
             Row(
               children: [
+                // Notification icon with badge
                 IconButton(
                   iconSize: 32,
-                  icon: const Icon(Icons.notifications_active),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationScreen(),
-                      ),
-                    );
-                  },
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(Icons.notifications_active),
+                      // Badge showing unread count
+                      if (_unreadCount > 0)
+                        Positioned(
+                          right: -6,
+                          top: -6,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            child: Text(
+                              _unreadCount > 99 ? '99+' : '$_unreadCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  onPressed: _navigateToNotifications,
                 ),
-                // PopupMenuButton<String>(
-                //   // We use your original icon and size
-                //   iconSize: 32,
-                //   // icon: const Icon(Icons.account_circle),
-
-                //   // This function is called when a user selects an item from the menu
-                //   onSelected: (String value) {
-                //     if (value == 'login') {
-                //       // Navigate to the Login Screen
-                //       Navigator.of(context).push(
-                //         MaterialPageRoute(
-                //           builder: (context) => const LoginScreen(),
-                //         ),
-                //       );
-                //     } else if (value == 'signup') {
-                //       // Navigate to the Sign Up Screen
-                //       Navigator.of(context).push(
-                //         MaterialPageRoute(
-                //           builder: (context) => const SignupScreen(),
-                //         ),
-                //       );
-                //     }
-                //   },
-
-                //   // This builds the menu with your Login and Sign Up options
-                //   itemBuilder: (BuildContext context) =>
-                //       <PopupMenuEntry<String>>[
-                //         const PopupMenuItem<String>(
-                //           value: 'login',
-                //           child: Text('Login'),
-                //         ),
-                //         const PopupMenuItem<String>(
-                //           value: 'signup',
-                //           child: Text('Sign Up'),
-                //         ),
-                //       ],
-                // ),
               ],
             ),
           ],
@@ -100,7 +122,4 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
-
-  @override
-  Size get preferredSize => Size.fromHeight(48);
 }

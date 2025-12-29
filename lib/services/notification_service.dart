@@ -126,9 +126,19 @@ class NotificationService {
   /// Gets the count of unread notifications
   static Future<int> getUnreadCount() async {
     try {
+      developer.log('Getting unread count...', name: 'NotificationService');
       final notifications = await getNotifications();
-      return notifications.where((n) => !n.isRead).length;
+      final unreadCount = notifications.where((n) => !n.isRead).length;
+      developer.log(
+        'Unread count: $unreadCount (total: ${notifications.length})',
+        name: 'NotificationService',
+      );
+      return unreadCount;
     } catch (e) {
+      developer.log(
+        'ERROR getting unread count: $e',
+        name: 'NotificationService',
+      );
       return 0;
     }
   }
