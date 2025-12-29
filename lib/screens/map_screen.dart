@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-class Map extends StatefulWidget {
-  const Map({super.key});
+class Map_Screen extends StatefulWidget {
+  const Map_Screen({super.key});
 
   @override
-  State<Map> createState() => _MapState();
+  State<Map_Screen> createState() => _Map_ScreenState();
 }
 
-class _MapState extends State<Map> {
+class _Map_ScreenState extends State<Map_Screen> {
   GoogleMapController? mapController;
 
   LatLng _currentPosition = const LatLng(37.7749, -122.4194);

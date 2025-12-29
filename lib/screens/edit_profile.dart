@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:volunteer_app/env.dart';
 import 'package:volunteer_app/screens/account_page.dart';
+import 'package:volunteer_app/theme/app_theme.dart';
 import 'package:http_parser/http_parser.dart'; // <--- ADD THIS
 
 class EditProfileScreen extends StatefulWidget {
@@ -517,208 +518,498 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        title: const Text(
-          "Edit Profile",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveProfile,
-            child: Text(
-              "Save",
-              style: TextStyle(
-                color: _isLoading ? Colors.grey : Colors.blue,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+      backgroundColor: AppTheme.backgroundColor,
+      body: _isLoading && _nameController.text.isEmpty
+          ? const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            )
+          : CustomScrollView(
+              slivers: [
+                // Gradient Header
+                SliverToBoxAdapter(child: _buildHeader()),
+                // Form Content
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      // Personal Information Section
+                      _buildSectionTitle('Personal Information'),
+                      const SizedBox(height: 16),
+                      _buildInputCard(
+                        icon: Icons.person_outline_rounded,
+                        iconColor: Colors.indigo,
+                        label: 'Full Name',
+                        child: _buildTextField(
+                          controller: _nameController,
+                          hint: 'Enter your full name',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInputCard(
+                        icon: Icons.email_outlined,
+                        iconColor: Colors.blue,
+                        label: 'Email Address',
+                        child: _buildTextField(
+                          controller: _emailController,
+                          hint: 'Enter your email',
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInputCard(
+                        icon: Icons.phone_outlined,
+                        iconColor: Colors.green,
+                        label: 'Phone Number',
+                        child: _buildTextField(
+                          controller: _phoneController,
+                          hint: '+91 Enter your phone number',
+                          keyboardType: TextInputType.phone,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Location Section
+                      _buildSectionTitle('Location'),
+                      const SizedBox(height: 16),
+                      _buildInputCard(
+                        icon: Icons.location_on_outlined,
+                        iconColor: Colors.red,
+                        label: 'Address',
+                        child: _buildTextField(
+                          controller: _addressController,
+                          hint: 'Enter your address',
+                          maxLines: 2,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Skills Section
+                      _buildSectionTitle('Skills & Expertise'),
+                      const SizedBox(height: 16),
+                      _buildInputCard(
+                        icon: Icons.work_outline_rounded,
+                        iconColor: Colors.purple,
+                        label: 'Primary Skill',
+                        child: _buildDropdown(),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Save Button
+                      _buildSaveButton(),
+                      const SizedBox(height: 16),
+                    ]),
+                  ),
+                ),
+              ],
             ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryColor,
+            AppTheme.primaryColor.withOpacity(0.85),
+            Colors.indigo.shade400,
+          ],
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 32),
+          child: Column(
+            children: [
+              // App Bar Row
+              Row(
                 children: [
-                  // Profile Image Section
-                  Center(
-                    child: InkWell(
-                      onTap: _previewImage,
-                      child: Stack(
-                        children: [
-                          Hero(
-                            tag: 'profile-image',
-                            child: Container(
-                              width: 128,
-                              height: 128,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.blue,
-                                  width: 4,
-                                ),
-                              ),
-                              child: _buildProfileImage(),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              height: 35,
-                              width: 35,
-                              decoration: BoxDecoration(
-                                color: Colors.blue,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                              ),
-                              child: InkWell(
-                                onTap: _pickImage,
-                                child: const Icon(
-                                  Icons.edit,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_rounded,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Edit Profile',
+                      textAlign: TextAlign.center,
+                      style: AppTheme.mainFont(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 30),
-
-                  // Form Fields
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Full Name',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
+                  // Save Button in header
+                  TextButton(
+                    onPressed: _isLoading ? null : _saveProfile,
+                    child: Text(
+                      'Save',
+                      style: AppTheme.mainFont(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: _isLoading
+                            ? Colors.white.withOpacity(0.5)
+                            : Colors.white,
                       ),
-                      EditField(
-                        controller: _nameController,
-                        hintText: "Enter Your Full Name",
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'E-mail',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      EditField(
-                        controller: _emailController,
-                        hintText: "Enter Your E-mail",
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Address',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      EditField(
-                        controller: _addressController,
-                        hintText: "Enter Your Address",
-                      ),
-                      const SizedBox(height: 16),
-                      _buildDropdownField(
-                        "Skill",
-                        "Select your skill",
-                        _selectedSkill,
-                        [
-                          'police',
-                          'nss',
-                          'fire force',
-                          'ncc',
-                          'student police',
-                          'scout',
-                          'other',
-                        ],
-                        (String? newValue) {
-                          setState(() {
-                            _selectedSkill = newValue;
-                          });
-                        },
-                        Icons.work_outline,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Phone Number',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      EditField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        hintText: "+91 ",
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Main Action Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        elevation: 2,
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              "Save Changes",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 20),
+              // Profile Image
+              GestureDetector(
+                onTap: _previewImage,
+                child: Hero(
+                  tag: 'profile-image',
+                  child: Stack(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 15,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          child: ClipOval(child: _buildProfileImage()),
+                        ),
+                      ),
+                      // Camera Button
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.15),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.camera_alt_rounded,
+                              color: AppTheme.primaryColor,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Tap to change photo',
+                style: AppTheme.mainFont(
+                  fontSize: 13,
+                  color: Colors.white.withOpacity(0.8),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 20,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: AppTheme.mainFont(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputCard({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: AppTheme.mainFont(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      style: AppTheme.mainFont(fontSize: 15),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: AppTheme.mainFont(color: Colors.grey.shade400, fontSize: 14),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedSkill,
+          hint: Text(
+            'Select your primary skill',
+            style: AppTheme.mainFont(color: Colors.grey.shade400, fontSize: 14),
+          ),
+          isExpanded: true,
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Colors.grey.shade600,
+          ),
+          style: AppTheme.mainFont(fontSize: 15, color: Colors.black87),
+          items:
+              [
+                'police',
+                'nss',
+                'fire force',
+                'ncc',
+                'student police',
+                'scout',
+                'other',
+              ].map((String item) {
+                return DropdownMenuItem<String>(
+                  value: item,
+                  child: Row(
+                    children: [
+                      _getSkillIcon(item),
+                      const SizedBox(width: 12),
+                      Text(_capitalizeFirst(item)),
+                    ],
+                  ),
+                );
+              }).toList(),
+          onChanged: (String? newValue) {
+            setState(() {
+              _selectedSkill = newValue;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _getSkillIcon(String skill) {
+    IconData iconData;
+    Color color;
+
+    switch (skill.toLowerCase()) {
+      case 'police':
+        iconData = Icons.local_police_rounded;
+        color = Colors.blue;
+        break;
+      case 'fire force':
+        iconData = Icons.local_fire_department_rounded;
+        color = Colors.orange;
+        break;
+      case 'ncc':
+        iconData = Icons.military_tech_rounded;
+        color = Colors.green;
+        break;
+      case 'nss':
+        iconData = Icons.volunteer_activism_rounded;
+        color = Colors.red;
+        break;
+      case 'student police':
+        iconData = Icons.school_rounded;
+        color = Colors.indigo;
+        break;
+      case 'scout':
+        iconData = Icons.hiking_rounded;
+        color = Colors.brown;
+        break;
+      default:
+        iconData = Icons.work_rounded;
+        color = Colors.grey;
+    }
+
+    return Icon(iconData, color: color, size: 20);
+  }
+
+  String _capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1);
+        })
+        .join(' ');
+  }
+
+  Widget _buildSaveButton() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.primaryColor, Colors.indigo.shade600],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isLoading ? null : _saveProfile,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: _isLoading
+                ? const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Save Changes',
+                        style: AppTheme.mainFont(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
     );
   }
 

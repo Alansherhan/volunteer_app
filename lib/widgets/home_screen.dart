@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:volunteer_app/components/layout/header.dart';
 import 'package:volunteer_app/screens/Dashboard.dart';
-import 'package:volunteer_app/screens/Map.dart';
+import 'package:volunteer_app/screens/map_screen.dart';
 import 'package:volunteer_app/screens/Tasks.dart';
 import 'package:volunteer_app/screens/account_page.dart';
 
@@ -17,7 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _pages = [
     const Dashboard(),
-    const Map(),
+    const Map_Screen(),
     const Tasks(),
     const Account(),
   ];
