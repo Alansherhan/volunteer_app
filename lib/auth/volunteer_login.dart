@@ -27,7 +27,6 @@ class _LoginScreenState extends State<LoginScreen> {
     String password,
     String role,
   ) async {
-    // Validate inputs
     if (email.isEmpty || password.isEmpty) {
       _showErrorDialog('Please enter both email and password');
       return;
@@ -41,7 +40,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Make API call to login endpoint
       final response = await http.post(
         Uri.parse('$kBaseUrl/public/login'),
         headers: {'Content-Type': 'application/json'},
@@ -49,28 +47,11 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (response.statusCode == 200) {
-        // Parse response
         final data = jsonDecode(response.body);
-
-        // 🔍 DEBUG: Print the entire response
-        // print('==================== LOGIN RESPONSE ====================');
-        // print('Full response: $data');
-        // print('Token: ${data['token']}');
-        // print('ID field: ${data['id']}');
-        // print('UserId field: ${data['userId']}');
-        // print('Data field: ${data['data']}');
-        // print('=======================================================');
-
-        // Store token and user data
         final prefs = await SharedPreferences.getInstance();
-
-        // Clear old data first
         await prefs.clear();
-
-        // Save token using the constant from env.dart
         await prefs.setString(kTokenStorageKey, data['token'] ?? '');
 
-        // Try multiple possible locations for user ID
         String? userId;
         if (data['id'] != null) {
           userId = data['id'].toString();
@@ -84,52 +65,33 @@ class _LoginScreenState extends State<LoginScreen> {
           await prefs.setString('user_id', userId);
         }
 
-        String? role;
+        String? userRole;
         if (data['role'] != null) {
-          role = data['role'].toString();
-          if (role != null) {
-            await prefs.setString('role', role);
-          }
-          if (role == 'volunteer') {
+          userRole = data['role'].toString();
+          await prefs.setString('role', userRole);
+          if (userRole == 'volunteer') {
             return;
           }
         }
 
-        // Save alternate token key for Edit Profile compatibility
         await prefs.setString(kTokenStorageKey, data['token'] ?? '');
         await prefs.setString('email', email);
 
-        // 🔍 DEBUG: Verify what was saved
-        // print('==================== SAVED TO STORAGE ====================');
-        // print('All keys: ${prefs.getKeys()}');
-        // print('Token (kTokenStorageKey): ${prefs.getString(kTokenStorageKey)}');
-        // print('User ID: ${prefs.getString('user_id')}');
-        // print('Auth token: ${prefs.getString('auth_token')}');
-        // print('Email: ${prefs.getString('email')}');
-        // print('=======================================================');
-
-        // Navigate to home screen
         if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         }
       } else {
-        // Try to parse error, but handle HTML responses
         try {
           final error = jsonDecode(response.body);
           _showErrorDialog(error['message'] ?? 'Login failed');
         } catch (e) {
-          _showErrorDialog(
-            'Server error: ${response.statusCode}\n${response.body.substring(0, 100)}',
-          );
+          _showErrorDialog('Server error: ${response.statusCode}');
         }
       }
     } catch (e) {
-      print('Error details: $e');
-      _showErrorDialog(
-        'Network error: Please check your connection and server URL',
-      );
+      _showErrorDialog('Network error: Please check your connection');
     } finally {
       if (mounted) {
         setState(() {
@@ -147,26 +109,36 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Reset Password'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'Reset Password',
+            style: AppTheme.mainFont(fontWeight: FontWeight.bold, fontSize: 20),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Enter your email address and we\'ll send you instructions to reset your password.',
-                style: TextStyle(fontSize: 14),
+                style: AppTheme.mainFont(
+                  fontSize: 14,
+                  color: AppTheme.textSecondary,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
+                style: AppTheme.mainFont(),
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  prefixIcon: Icon(
+                    Icons.email_outlined,
+                    color: AppTheme.primaryColor,
                   ),
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  hintText: "Email",
-                  labelText: "Email",
+                  hintText: 'Email',
+                  labelText: 'Email',
                 ),
               ),
             ],
@@ -176,12 +148,12 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: isSubmitting
                   ? null
                   : () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: AppTheme.mainFont(color: AppTheme.textSecondary),
+              ),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 116, 188, 247),
-              ),
               onPressed: isSubmitting
                   ? null
                   : () async {
@@ -192,7 +164,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         return;
                       }
 
-                      // Email validation
                       if (!RegExp(
                         r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                       ).hasMatch(resetEmail)) {
@@ -205,7 +176,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       });
 
                       try {
-                        // Make API call to forgot password endpoint
                         final response = await http.post(
                           Uri.parse('$kBaseUrl/public/forgot-password'),
                           headers: {'Content-Type': 'application/json'},
@@ -213,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
 
                         if (mounted) {
-                          Navigator.of(context).pop(); // Close dialog
+                          Navigator.of(context).pop();
                         }
 
                         if (response.statusCode == 200) {
@@ -234,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         }
                       } catch (e) {
                         if (mounted) {
-                          Navigator.of(context).pop(); // Close dialog
+                          Navigator.of(context).pop();
                         }
                         _showErrorDialog(
                           'Network error: Please check your connection',
@@ -250,10 +220,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         strokeWidth: 2,
                       ),
                     )
-                  : const Text(
-                      'Send Reset Link',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                  : const Text('Send Reset Link'),
             ),
           ],
         ),
@@ -265,10 +232,33 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.errorColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                color: AppTheme.errorColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Error',
+              style: AppTheme.mainFont(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: AppTheme.mainFont(color: AppTheme.textSecondary),
+        ),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('OK'),
           ),
@@ -281,10 +271,33 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Success'),
-        content: Text(message),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.successColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.check_circle_outline_rounded,
+                color: AppTheme.successColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Success',
+              style: AppTheme.mainFont(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: AppTheme.mainFont(color: AppTheme.textSecondary),
+        ),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('OK'),
           ),
@@ -296,135 +309,200 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Logo & Title
-                Hero(
-                  tag: 'app_logo',
-                  child: Container(
-                    height: 120,
-                    width: 120,
+      body: Container(
+        decoration: BoxDecoration(gradient: AppTheme.backgroundGradient),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Logo
+                  Hero(
+                    tag: 'app_logo',
+                    child: Container(
+                      height: 100,
+                      width: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.primaryColor.withOpacity(0.15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.2),
+                            blurRadius: 30,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(20),
+                      child: Image.asset(
+                        'assets/images/logo5.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Title
+                  Text(
+                    'Welcome Back',
+                    style: AppTheme.mainFont(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sign in to continue making a difference',
+                    style: AppTheme.mainFont(
+                      fontSize: 15,
+                      color: AppTheme.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Form Card
+                  Container(
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      color: AppTheme.surfaceColor,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: AppTheme.softShadow,
                     ),
-                    padding: const EdgeInsets.all(20),
-                    child: Image.asset(
-                      'assets/images/logo5.png',
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Text(
-                  'Welcome Back',
-                  style: AppTheme.textTheme.displayMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Sign in to continue making a difference',
-                  style: AppTheme.textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 48),
-
-                // Form
-                TextFormField(
-                  onChanged: (value) => setState(() => email = value),
-                  keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: Colors.black87),
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'Enter your email',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  onChanged: (value) => setState(() => password = value),
-                  obscureText: _obscurePassword,
-                  style: const TextStyle(color: Colors.black87),
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    hintText: 'Enter your password',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Forgot Password Placeholder (Commented out in original)
-                // Align(
-                //   alignment: Alignment.centerRight,
-                //   child: TextButton(
-                //     onPressed: _onForgotPassword,
-                //     child: const Text('Forgot Password?'),
-                //   ),
-                // ),
-                const SizedBox(height: 32),
-
-                // Login Button
-                ElevatedButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () => _onLoginPressed(email, password, role),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+                    child: Column(
+                      children: [
+                        // Email Field
+                        TextFormField(
+                          onChanged: (value) => setState(() => email = value),
+                          keyboardType: TextInputType.emailAddress,
+                          style: AppTheme.mainFont(color: AppTheme.textPrimary),
+                          decoration: InputDecoration(
+                            labelText: 'Email',
+                            hintText: 'Enter your email',
+                            prefixIcon: Icon(
+                              Icons.email_outlined,
+                              color: AppTheme.primaryColor,
+                            ),
                           ),
-                        )
-                      : const Text('Log In'),
-                ),
+                        ),
+                        const SizedBox(height: 20),
 
-                const SizedBox(height: 24),
-
-                // Sign Up Link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Don't have an account? ",
-                      style: AppTheme.textTheme.bodyMedium,
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (context) => const SignupScreen(),
+                        // Password Field
+                        TextFormField(
+                          onChanged: (value) =>
+                              setState(() => password = value),
+                          obscureText: _obscurePassword,
+                          style: AppTheme.mainFont(color: AppTheme.textPrimary),
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            hintText: 'Enter your password',
+                            prefixIcon: Icon(
+                              Icons.lock_outline_rounded,
+                              color: AppTheme.primaryColor,
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                                color: AppTheme.textMuted,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
+                            ),
                           ),
-                        );
-                      },
-                      child: const Text(
-                        "Sign Up",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Forgot Password
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: _onForgotPassword,
+                            child: Text(
+                              'Forgot Password?',
+                              style: AppTheme.mainFont(
+                                color: AppTheme.primaryColor,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Login Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => _onLoginPressed(email, password, role),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    'Sign In',
+                                    style: AppTheme.mainFont(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ],
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Sign Up Link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Don't have an account? ",
+                        style: AppTheme.mainFont(
+                          color: AppTheme.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => const SignupScreen(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'Sign Up',
+                          style: AppTheme.mainFont(
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:developer' as developer;
 import 'package:volunteer_app/screens/notification_screen.dart';
 import 'package:volunteer_app/services/notification_service.dart';
+import 'package:volunteer_app/theme/app_theme.dart';
 
 class Header extends StatefulWidget implements PreferredSizeWidget {
   const Header({super.key});
@@ -24,17 +24,14 @@ class _HeaderState extends State<Header> {
 
   Future<void> _loadUnreadCount() async {
     try {
-      print('>>> Header: Loading unread count...');
       final count = await NotificationService.getUnreadCount();
-      print('>>> Header: Got unread count: $count');
       if (mounted) {
         setState(() {
           _unreadCount = count;
         });
-        print('>>> Header: State updated, _unreadCount = $_unreadCount');
       }
     } catch (e) {
-      print('>>> Header: Error loading unread count: $e');
+      // Handle error silently
     }
   }
 
@@ -42,80 +39,105 @@ class _HeaderState extends State<Header> {
     await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const NotificationScreen()));
-    // Refresh count when returning from notifications screen
     _loadUnreadCount();
   }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+      bottom: false,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // Logo and App Name
             Row(
               children: [
-                Image(
-                  fit: BoxFit.cover,
-                  width: 35,
-                  height: 35,
-                  image: const AssetImage('assets/images/logo3.png'),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'assets/images/logo3.png',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
-                const Text(
-                  'Volenteer',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-                ),
-                const Text(
-                  'App',
-                  style: TextStyle(
-                    color: Colors.blue,
+                const SizedBox(width: 10),
+                Text(
+                  'Volunteer',
+                  style: AppTheme.mainFont(
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    fontSize: 24,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                Text(
+                  'App',
+                  style: AppTheme.mainFont(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryColor,
                   ),
                 ),
               ],
             ),
-            Row(
-              children: [
-                // Notification icon with badge
-                IconButton(
-                  iconSize: 32,
-                  icon: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(Icons.notifications_active),
-                      // Badge showing unread count
-                      if (_unreadCount > 0)
-                        Positioned(
-                          right: -6,
-                          top: -6,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 18,
-                              minHeight: 18,
-                            ),
-                            child: Text(
-                              _unreadCount > 99 ? '99+' : '$_unreadCount',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
+            // Notification Button
+            GestureDetector(
+              onTap: _navigateToNotifications,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: AppTheme.softShadow,
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      Icons.notifications_outlined,
+                      color: AppTheme.textPrimary,
+                      size: 24,
+                    ),
+                    if (_unreadCount > 0)
+                      Positioned(
+                        right: -4,
+                        top: -4,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.errorColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppTheme.surfaceColor,
+                              width: 2,
                             ),
                           ),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          child: Text(
+                            _unreadCount > 99 ? '99+' : '$_unreadCount',
+                            style: AppTheme.mainFont(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                    ],
-                  ),
-                  onPressed: _navigateToNotifications,
+                      ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ],
         ),

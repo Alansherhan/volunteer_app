@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:volunteer_app/env.dart';
+import 'package:volunteer_app/theme/app_theme.dart';
 
 class Map_Screen extends StatefulWidget {
   const Map_Screen({super.key});
@@ -70,16 +71,13 @@ class _Map_ScreenState extends State<Map_Screen> {
     });
 
     try {
-      // Using Nominatim OpenStreetMap API for geocoding (free, no API key required)
       final url = Uri.parse(
         'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=5&addressdetails=1',
       );
 
       final response = await http.get(
         url,
-        headers: {
-          'User-Agent': 'VolunteerApp/1.0', // Required by Nominatim
-        },
+        headers: {'User-Agent': 'VolunteerApp/1.0'},
       );
 
       if (response.statusCode == 200) {
@@ -105,7 +103,6 @@ class _Map_ScreenState extends State<Map_Screen> {
         });
       }
     } catch (e) {
-      print('DEBUG: Search error: $e');
       if (!mounted) return;
       setState(() {
         _searchResults = [];
@@ -122,20 +119,18 @@ class _Map_ScreenState extends State<Map_Screen> {
     setState(() {
       _selectedLocation = LatLng(lat, lng);
       _showSearchResults = false;
-      _searchController.text = name.split(',').first; // Show short name
+      _searchController.text = name.split(',').first;
 
-      // Add marker for selected location
       _markers = {
         Marker(
           markerId: const MarkerId('selected_location'),
           position: _selectedLocation!,
           infoWindow: InfoWindow(title: name.split(',').first),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
         ),
       };
     });
 
-    // Animate camera to selected location
     mapController?.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(target: _selectedLocation!, zoom: 16),
@@ -161,14 +156,20 @@ class _Map_ScreenState extends State<Map_Screen> {
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      print("DEBUG: Location services are disabled.");
-
       if (!mounted) return;
       setState(() => _isLoading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Location services are disabled. Please turn on GPS.'),
+        SnackBar(
+          content: Text(
+            'Location services are disabled. Please turn on GPS.',
+            style: AppTheme.mainFont(),
+          ),
+          backgroundColor: AppTheme.warningColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
@@ -191,7 +192,6 @@ class _Map_ScreenState extends State<Map_Screen> {
     }
 
     try {
-      print("DEBUG: Fetching current position...");
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -211,7 +211,6 @@ class _Map_ScreenState extends State<Map_Screen> {
         );
       }
     } catch (e) {
-      print("DEBUG: Error getting location: $e");
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
@@ -220,36 +219,59 @@ class _Map_ScreenState extends State<Map_Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: AppTheme.primaryColor,
+                    strokeWidth: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading map...',
+                    style: AppTheme.mainFont(color: AppTheme.textSecondary),
+                  ),
+                ],
+              ),
+            )
           : Stack(
               children: [
-                // Google Map - MUST be first so other widgets render on top
-                GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: _currentPosition,
-                    zoom: 14.0,
+                // Google Map
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
                   ),
-                  onMapCreated: (GoogleMapController controller) {
-                    mapController = controller;
-                    if (_currentPosition.latitude != 37.7749) {
-                      controller.animateCamera(
-                        CameraUpdate.newCameraPosition(
-                          CameraPosition(target: _currentPosition, zoom: 15),
-                        ),
-                      );
-                    }
-                  },
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: false, // We'll add custom button
-                  markers: _markers,
-                  onTap: (_) {
-                    // Dismiss search results when tapping on map
-                    setState(() {
-                      _showSearchResults = false;
-                    });
-                    _searchFocusNode.unfocus();
-                  },
+                  child: GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: _currentPosition,
+                      zoom: 14.0,
+                    ),
+                    onMapCreated: (GoogleMapController controller) {
+                      mapController = controller;
+                      if (_currentPosition.latitude != 37.7749) {
+                        controller.animateCamera(
+                          CameraUpdate.newCameraPosition(
+                            CameraPosition(target: _currentPosition, zoom: 15),
+                          ),
+                        );
+                      }
+                    },
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: false,
+                    markers: _markers,
+                    mapToolbarEnabled: false,
+                    zoomControlsEnabled: false,
+                    onTap: (_) {
+                      setState(() {
+                        _showSearchResults = false;
+                      });
+                      _searchFocusNode.unfocus();
+                    },
+                  ),
                 ),
 
                 // Search Bar
@@ -262,38 +284,36 @@ class _Map_ScreenState extends State<Map_Screen> {
                       // Search Input
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
-                              blurRadius: 20,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                          color: AppTheme.surfaceColor,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: AppTheme.mediumShadow,
                         ),
                         child: TextField(
                           controller: _searchController,
                           focusNode: _searchFocusNode,
+                          style: AppTheme.mainFont(
+                            color: AppTheme.textPrimary,
+                            fontSize: 15,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Search for a location...',
-                            hintStyle: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 16,
+                            hintStyle: AppTheme.mainFont(
+                              color: AppTheme.textMuted,
+                              fontSize: 15,
                             ),
                             prefixIcon: Container(
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(14),
                               child: Icon(
                                 Icons.search_rounded,
-                                color: Theme.of(context).primaryColor,
-                                size: 24,
+                                color: AppTheme.primaryColor,
+                                size: 22,
                               ),
                             ),
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
                                     icon: Icon(
-                                      Icons.clear_rounded,
-                                      color: Colors.grey[600],
+                                      Icons.close_rounded,
+                                      color: AppTheme.textMuted,
                                     ),
                                     onPressed: _clearSearch,
                                   )
@@ -320,44 +340,50 @@ class _Map_ScreenState extends State<Map_Screen> {
                           margin: const EdgeInsets.only(top: 8),
                           constraints: const BoxConstraints(maxHeight: 250),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 15,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            color: AppTheme.surfaceColor,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: AppTheme.mediumShadow,
                           ),
                           child: _isSearching
-                              ? const Padding(
-                                  padding: EdgeInsets.all(20),
+                              ? Padding(
+                                  padding: const EdgeInsets.all(24),
                                   child: Center(
                                     child: SizedBox(
                                       width: 24,
                                       height: 24,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
+                                        color: AppTheme.primaryColor,
                                       ),
                                     ),
                                   ),
                                 )
                               : _searchResults.isEmpty
                               ? Padding(
-                                  padding: const EdgeInsets.all(20),
+                                  padding: const EdgeInsets.all(24),
                                   child: Center(
-                                    child: Text(
-                                      'No locations found',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                      ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.location_off_rounded,
+                                          color: AppTheme.textMuted,
+                                          size: 32,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'No locations found',
+                                          style: AppTheme.mainFont(
+                                            color: AppTheme.textSecondary,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 )
                               : ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(20),
                                   child: ListView.builder(
                                     shrinkWrap: true,
                                     padding: EdgeInsets.zero,
@@ -378,49 +404,104 @@ class _Map_ScreenState extends State<Map_Screen> {
 
                 // My Location Button
                 Positioned(
-                  left: 16,
-                  bottom: 28,
-                  child: Column(
-                    children: [
-                      // Go to current location button
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
+                  right: 16,
+                  bottom: 100,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: AppTheme.mediumShadow,
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {
+                          mapController?.animateCamera(
+                            CameraUpdate.newCameraPosition(
+                              CameraPosition(
+                                target: _currentPosition,
+                                zoom: 15,
+                              ),
                             ),
-                          ],
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Icon(
+                            Icons.my_location_rounded,
+                            color: AppTheme.primaryColor,
+                            size: 24,
+                          ),
                         ),
-                        child: Material(
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Zoom Controls
+                Positioned(
+                  right: 16,
+                  bottom: 170,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: AppTheme.softShadow,
+                    ),
+                    child: Column(
+                      children: [
+                        Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(16),
+                              topRight: Radius.circular(16),
+                            ),
                             onTap: () {
                               mapController?.animateCamera(
-                                CameraUpdate.newCameraPosition(
-                                  CameraPosition(
-                                    target: _currentPosition,
-                                    zoom: 15,
-                                  ),
-                                ),
+                                CameraUpdate.zoomIn(),
                               );
                             },
                             child: Padding(
                               padding: const EdgeInsets.all(12),
                               child: Icon(
-                                Icons.my_location_rounded,
-                                color: Theme.of(context).primaryColor,
-                                size: 24,
+                                Icons.add_rounded,
+                                color: AppTheme.textPrimary,
+                                size: 22,
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        Container(
+                          height: 1,
+                          width: 30,
+                          color: AppTheme.backgroundColor,
+                        ),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(16),
+                              bottomRight: Radius.circular(16),
+                            ),
+                            onTap: () {
+                              mapController?.animateCamera(
+                                CameraUpdate.zoomOut(),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Icon(
+                                Icons.remove_rounded,
+                                color: AppTheme.textPrimary,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -439,38 +520,42 @@ class _Map_ScreenState extends State<Map_Screen> {
       child: InkWell(
         onTap: () => _selectSearchResult(result),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             border: isLast
                 ? null
                 : Border(
-                    bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                    bottom: BorderSide(
+                      color: AppTheme.backgroundColor,
+                      width: 1,
+                    ),
                   ),
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.location_on_rounded,
-                  color: Theme.of(context).primaryColor,
+                  color: AppTheme.primaryColor,
                   size: 20,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: AppTheme.mainFont(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
+                        color: AppTheme.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -478,14 +563,21 @@ class _Map_ScreenState extends State<Map_Screen> {
                     if (subtitle.isNotEmpty)
                       Text(
                         subtitle,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        style: AppTheme.mainFont(
+                          color: AppTheme.textMuted,
+                          fontSize: 12,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                   ],
                 ),
               ),
-              Icon(Icons.north_west_rounded, color: Colors.grey[400], size: 16),
+              Icon(
+                Icons.north_west_rounded,
+                color: AppTheme.textMuted,
+                size: 16,
+              ),
             ],
           ),
         ),

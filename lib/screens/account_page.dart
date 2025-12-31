@@ -9,6 +9,7 @@ import 'package:volunteer_app/screens/change_password_page.dart';
 import 'package:volunteer_app/screens/edit_profile.dart';
 import 'package:volunteer_app/theme/app_theme.dart';
 import 'package:http/http.dart' as http;
+import 'package:volunteer_app/services/task_service.dart';
 
 class Account extends StatefulWidget {
   const Account({super.key});
@@ -26,6 +27,10 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
   String userEmail = '';
   bool isLoading = true;
 
+  // Task counts
+  int completedCount = 0;
+  int pendingCount = 0;
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -40,6 +45,7 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _fetchUserProfile();
+    _fetchTaskCounts();
   }
 
   @override
@@ -96,6 +102,20 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
       });
       _animationController.forward();
       print('Error fetching user profile: $e');
+    }
+  }
+
+  Future<void> _fetchTaskCounts() async {
+    try {
+      final counts = await TaskService.getTaskCounts();
+      if (mounted) {
+        setState(() {
+          completedCount = counts['completed'] ?? 0;
+          pendingCount = counts['pending'] ?? 0;
+        });
+      }
+    } catch (e) {
+      print('Error fetching task counts: $e');
     }
   }
 
@@ -183,7 +203,7 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
                         _buildMenuCard([
                           _buildMenuItem(
                             icon: Icons.person_outline_rounded,
-                            iconColor: Colors.indigo,
+                            iconColor: AppTheme.primaryColor,
                             title: 'Edit Profile',
                             subtitle: 'Update your personal information',
                             onTap: () async {
@@ -199,7 +219,7 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
                           _buildDivider(),
                           _buildMenuItem(
                             icon: Icons.lock_outline_rounded,
-                            iconColor: Colors.orange,
+                            iconColor: AppTheme.warningColor,
                             title: 'Change Password',
                             subtitle: 'Update your security credentials',
                             onTap: () {
@@ -233,8 +253,8 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
           end: Alignment.bottomRight,
           colors: [
             AppTheme.primaryColor,
-            AppTheme.primaryColor.withOpacity(0.8),
-            Colors.indigo.shade400,
+            AppTheme.primaryColorLight,
+            AppTheme.secondaryColor.withOpacity(0.8),
           ],
         ),
         borderRadius: const BorderRadius.only(
@@ -400,22 +420,22 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
           children: [
             _buildStatItem(
               icon: Icons.assignment_turned_in_rounded,
-              iconColor: Colors.green,
-              value: '0',
+              iconColor: AppTheme.successColor,
+              value: '$completedCount',
               label: 'Completed',
             ),
             _buildVerticalDivider(),
             _buildStatItem(
               icon: Icons.pending_actions_rounded,
-              iconColor: Colors.orange,
-              value: '0',
+              iconColor: AppTheme.warningColor,
+              value: '$pendingCount',
               label: 'Pending',
             ),
             _buildVerticalDivider(),
             _buildStatItem(
               icon: Icons.star_rounded,
-              iconColor: Colors.amber,
-              value: '0',
+              iconColor: AppTheme.primaryColor,
+              value: '${completedCount * 10}',
               label: 'Points',
             ),
           ],
