@@ -378,8 +378,8 @@ class _Map_ScreenState extends State<Map_Screen> {
 
                 // My Location Button
                 Positioned(
-                  right: 16,
-                  bottom: 24,
+                  left: 16,
+                  bottom: 28,
                   child: Column(
                     children: [
                       // Go to current location button
