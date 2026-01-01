@@ -15,6 +15,19 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   final List<Widget> _pages = [
     const Dashboard(),
@@ -33,23 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const Header(),
             Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: ScaleTransition(
-                      scale: Tween<double>(
-                        begin: 0.95,
-                        end: 1.0,
-                      ).animate(animation),
-                      child: child,
-                    ),
-                  );
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() => _currentIndex = index);
                 },
-                child: _pages[_currentIndex],
+                children: _pages,
               ),
             ),
           ],
@@ -86,9 +88,12 @@ class _HomeScreenState extends State<HomeScreen> {
               fontWeight: FontWeight.w400,
             ),
             onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
+              setState(() => _currentIndex = index);
+              _pageController.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
             },
             items: [
               _buildNavItem(Icons.home_rounded, Icons.home_outlined, 'Home', 0),
