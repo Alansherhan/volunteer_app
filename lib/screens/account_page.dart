@@ -235,7 +235,7 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
 
                         const SizedBox(height: 32),
                         _buildLogoutButton(),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 100),
                       ]),
                     ),
                   ),
