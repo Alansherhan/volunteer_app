@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:volunteer_app/env.dart';
@@ -135,6 +136,73 @@ class TaskService {
     } catch (e, stackTrace) {
       developer.log(
         'ERROR updating task status: $e',
+        name: 'TaskService',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
+  /// Complete task with proof image upload
+  static Future<bool> completeTaskWithProof(
+    String taskId,
+    File imageFile,
+  ) async {
+    try {
+      developer.log(
+        'Completing task $taskId with proof image',
+        name: 'TaskService',
+      );
+
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      var request = http.MultipartRequest(
+        'PUT',
+        Uri.parse('$baseUrl/tasks/$taskId/complete'),
+      );
+
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Get the file extension for proper filename
+      final extension = imageFile.path.split('.').last.toLowerCase();
+
+      developer.log('File extension: $extension', name: 'TaskService');
+
+      // Read file bytes and create multipart file with proper filename
+      final bytes = await imageFile.readAsBytes();
+      final filename =
+          'proofImage_${DateTime.now().millisecondsSinceEpoch}.$extension';
+
+      request.files.add(
+        http.MultipartFile.fromBytes('proofImage', bytes, filename: filename),
+      );
+
+      developer.log('Sending multipart request...', name: 'TaskService');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      developer.log(
+        'Complete with proof response: ${response.statusCode}',
+        name: 'TaskService',
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['success'] == true;
+      }
+
+      developer.log(
+        'Complete with proof failed: ${response.body}',
+        name: 'TaskService',
+      );
+      return false;
+    } catch (e, stackTrace) {
+      developer.log(
+        'ERROR completing task with proof: $e',
         name: 'TaskService',
         error: e,
         stackTrace: stackTrace,

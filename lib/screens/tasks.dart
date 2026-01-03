@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:volunteer_app/models/task_model.dart';
+import 'package:volunteer_app/screens/dashboard_screen/task_screen.dart';
 import 'package:volunteer_app/services/task_service.dart';
 import 'package:volunteer_app/theme/app_theme.dart';
 
@@ -277,133 +278,141 @@ class _TasksState extends State<Tasks> {
   }
 
   Widget _buildTaskCard(TaskModel task) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: AppTheme.softShadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Task Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _getPriorityColor(task.priority).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  _getTaskTypeIcon(task.taskType),
-                  color: _getPriorityColor(task.priority),
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.taskName,
-                      style: AppTheme.mainFont(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      task.taskTypeLabel,
-                      style: AppTheme.mainFont(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: _getPriorityColor(task.priority).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  task.priority.toUpperCase(),
-                  style: AppTheme.mainFont(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: _getPriorityColor(task.priority),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (task.location != null) ...[
-            const SizedBox(height: 12),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => TaskScreen(task: task)),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppTheme.softShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Task Header
             Row(
               children: [
-                Icon(
-                  Icons.location_on_outlined,
-                  size: 16,
-                  color: AppTheme.textSecondary,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _getPriorityColor(task.priority).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _getTaskTypeIcon(task.taskType),
+                    color: _getPriorityColor(task.priority),
+                    size: 22,
+                  ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 12),
                 Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.taskName,
+                        style: AppTheme.mainFont(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        task.taskTypeLabel,
+                        style: AppTheme.mainFont(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getPriorityColor(task.priority).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Text(
-                    task.location!,
+                    task.priority.toUpperCase(),
                     style: AppTheme.mainFont(
-                      fontSize: 13,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: _getPriorityColor(task.priority),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (task.location != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 16,
+                    color: AppTheme.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      task.location!,
+                      style: AppTheme.mainFont(
+                        fontSize: 13,
+                        color: AppTheme.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (task.timeAgo.isNotEmpty)
+                  Text(
+                    task.timeAgo,
+                    style: AppTheme.mainFont(
+                      fontSize: 12,
                       color: AppTheme.textSecondary,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(task.status).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    task.status.toUpperCase(),
+                    style: AppTheme.mainFont(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: _getStatusColor(task.status),
+                    ),
                   ),
                 ),
               ],
             ),
           ],
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (task.timeAgo.isNotEmpty)
-                Text(
-                  task.timeAgo,
-                  style: AppTheme.mainFont(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(task.status).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  task.status.toUpperCase(),
-                  style: AppTheme.mainFont(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: _getStatusColor(task.status),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
