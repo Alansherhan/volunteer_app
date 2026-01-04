@@ -15,7 +15,7 @@ class Dashboard extends StatefulWidget {
 class _DashboardState extends State<Dashboard> {
   List<TaskModel> _tasks = [];
   bool _isLoading = true;
-  int _pendingCount = 0;
+  int _assignedCount = 0;
   int _completedCount = 0;
   int _acceptedCount = 0;
   String? _loadingTaskId; // Track which task is being updated
@@ -34,7 +34,7 @@ class _DashboardState extends State<Dashboard> {
       if (mounted) {
         setState(() {
           _tasks = tasks;
-          _pendingCount = counts['pending'] ?? 0;
+          _assignedCount = counts['assigned'] ?? 0;
           _completedCount = counts['completed'] ?? 0;
           _acceptedCount = counts['accepted'] ?? 0;
           _isLoading = false;
@@ -50,13 +50,13 @@ class _DashboardState extends State<Dashboard> {
   // Get active tasks (pending + accepted) for display
   List<TaskModel> get _activeTasks {
     return _tasks
-        .where((t) => t.status == 'pending' || t.status == 'accepted')
+        .where((t) => t.status == 'assigned' || t.status == 'accepted')
         .take(5)
         .toList();
   }
 
   Future<void> _handleStartTask(TaskModel task) async {
-    final newStatus = task.status == 'pending' ? 'accepted' : 'completed';
+    final newStatus = task.status == 'assigned' ? 'accepted' : 'completed';
 
     setState(() => _loadingTaskId = task.id);
 
@@ -386,9 +386,9 @@ class _DashboardState extends State<Dashboard> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStatItem(
-                '$_pendingCount',
-                'Pending',
-                Icons.hourglass_empty_rounded,
+                '$_assignedCount',
+                'Assigned',
+                Icons.assignment_ind_rounded,
               ),
               _buildVerticalDivider(),
               _buildStatItem(

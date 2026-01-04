@@ -2,7 +2,8 @@ class TaskModel {
   final String id;
   final String taskName;
   final String taskType; // "aid" | "donation"
-  final String status; // "pending" | "accepted" | "completed" | "rejected"
+  final String
+  status; // "open" | "assigned" | "accepted" | "completed" | "rejected"
   final String priority; // "high" | "medium" | "low"
   final String? imageUrl;
   final DateTime? createdAt;
@@ -26,7 +27,7 @@ class TaskModel {
       id: json['_id'] ?? json['id'] ?? '',
       taskName: json['taskName'] ?? '',
       taskType: json['taskType'] ?? 'aid',
-      status: json['status'] ?? 'pending',
+      status: json['status'] ?? 'assigned',
       priority: json['priority'] ?? 'low',
       imageUrl: json['imageUrl'],
       createdAt: json['createdAt'] != null

@@ -3,6 +3,7 @@ import 'package:volunteer_app/components/layout/header.dart';
 import 'package:volunteer_app/screens/Dashboard.dart';
 import 'package:volunteer_app/screens/map_screen.dart';
 import 'package:volunteer_app/screens/Tasks.dart';
+import 'package:volunteer_app/screens/task_pool_screen.dart';
 import 'package:volunteer_app/screens/account_page.dart';
 import 'package:volunteer_app/theme/app_theme.dart';
 
@@ -31,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _pages = [
     const Dashboard(),
+    const TaskPoolScreen(),
     const Map_Screen(),
     const Tasks(),
     const Account(),
@@ -94,18 +96,24 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             items: [
               _buildNavItem(Icons.home_rounded, Icons.home_outlined, 'Home', 0),
-              _buildNavItem(Icons.map_rounded, Icons.map_outlined, 'Map', 1),
+              _buildNavItem(
+                Icons.explore_rounded,
+                Icons.explore_outlined,
+                'Available',
+                1,
+              ),
+              _buildNavItem(Icons.map_rounded, Icons.map_outlined, 'Map', 2),
               _buildNavItem(
                 Icons.assignment_rounded,
                 Icons.assignment_outlined,
                 'Tasks',
-                2,
+                3,
               ),
               _buildNavItem(
                 Icons.person_rounded,
                 Icons.person_outline_rounded,
                 'Account',
-                3,
+                4,
               ),
             ],
           ),

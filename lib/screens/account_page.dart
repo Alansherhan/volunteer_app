@@ -29,7 +29,7 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
 
   // Task counts
   int completedCount = 0;
-  int pendingCount = 0;
+  int assignedCount = 0;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -111,7 +111,7 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
       if (mounted) {
         setState(() {
           completedCount = counts['completed'] ?? 0;
-          pendingCount = counts['pending'] ?? 0;
+          assignedCount = counts['assigned'] ?? 0;
         });
       }
     } catch (e) {
@@ -426,10 +426,10 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
             ),
             _buildVerticalDivider(),
             _buildStatItem(
-              icon: Icons.pending_actions_rounded,
+              icon: Icons.assignment_ind_rounded,
               iconColor: AppTheme.warningColor,
-              value: '$pendingCount',
-              label: 'Pending',
+              value: '$assignedCount',
+              label: 'Assigned',
             ),
             _buildVerticalDivider(),
             _buildStatItem(

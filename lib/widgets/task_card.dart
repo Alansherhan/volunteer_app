@@ -19,7 +19,7 @@ class TaskCard extends StatelessWidget {
     required this.title,
     required this.location,
     required this.type,
-    this.status = 'pending',
+    this.status = 'assigned',
     required this.onTap,
     this.onStartTask,
     this.isLoading = false,
@@ -221,7 +221,7 @@ class TaskCard extends StatelessWidget {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'pending':
+      case 'assigned':
         return Colors.orange;
       case 'accepted':
         return Colors.blue;
@@ -236,7 +236,7 @@ class TaskCard extends StatelessWidget {
 
   Color _getButtonColor(String status) {
     switch (status.toLowerCase()) {
-      case 'pending':
+      case 'assigned':
         return AppTheme.primaryColor;
       case 'accepted':
         return AppTheme.successColor;
@@ -247,8 +247,8 @@ class TaskCard extends StatelessWidget {
 
   String _getButtonText(String status) {
     switch (status.toLowerCase()) {
-      case 'pending':
-        return 'Start Task';
+      case 'assigned':
+        return 'Accept Task';
       case 'accepted':
         return 'Mark Complete';
       case 'completed':
@@ -260,8 +260,8 @@ class TaskCard extends StatelessWidget {
 
   IconData _getButtonIcon(String status) {
     switch (status.toLowerCase()) {
-      case 'pending':
-        return Icons.play_arrow_rounded;
+      case 'assigned':
+        return Icons.check_rounded;
       case 'accepted':
         return Icons.check_circle_rounded;
       default:

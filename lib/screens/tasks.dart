@@ -11,10 +11,10 @@ class Tasks extends StatefulWidget {
   State<Tasks> createState() => _TasksState();
 }
 
-enum TaskStatus { Pending, Accepted, Completed, Rejected }
+enum TaskStatus { Assigned, Accepted, Completed, Rejected }
 
 class _TasksState extends State<Tasks> {
-  TaskStatus _selectedStatus = TaskStatus.Pending;
+  TaskStatus _selectedStatus = TaskStatus.Assigned;
   List<TaskModel> _allTasks = [];
   bool _isLoading = true;
   String? _error;
@@ -419,8 +419,8 @@ class _TasksState extends State<Tasks> {
 
   IconData _getIconForStatus(TaskStatus status) {
     switch (status) {
-      case TaskStatus.Pending:
-        return Icons.hourglass_empty_rounded;
+      case TaskStatus.Assigned:
+        return Icons.assignment_ind_rounded;
       case TaskStatus.Accepted:
         return Icons.thumb_up_alt_rounded;
       case TaskStatus.Completed:
@@ -443,8 +443,8 @@ class _TasksState extends State<Tasks> {
 
   String _getMessageForStatus(TaskStatus status) {
     switch (status) {
-      case TaskStatus.Pending:
-        return 'Tasks awaiting your response will appear here';
+      case TaskStatus.Assigned:
+        return 'Tasks assigned to you will appear here';
       case TaskStatus.Accepted:
         return 'Tasks you\'ve accepted will be shown here';
       case TaskStatus.Completed:
@@ -469,7 +469,7 @@ class _TasksState extends State<Tasks> {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'pending':
+      case 'assigned':
         return Colors.orange;
       case 'accepted':
         return Colors.blue;

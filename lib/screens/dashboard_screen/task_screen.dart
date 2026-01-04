@@ -540,10 +540,10 @@ class _TaskScreenState extends State<TaskScreen> {
             const SizedBox(height: 32),
 
             // Action Buttons
-            if (task.status == 'pending') ...[
+            if (task.status == 'assigned') ...[
               _buildActionButton(
-                label: 'Start Task',
-                icon: Icons.play_arrow_rounded,
+                label: 'Accept Task',
+                icon: Icons.check_rounded,
                 color: AppTheme.primaryColor,
                 onPressed: () => _updateStatus('accepted'),
               ),
@@ -759,7 +759,7 @@ class _TaskScreenState extends State<TaskScreen> {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'pending':
+      case 'assigned':
         return Colors.orange;
       case 'accepted':
         return Colors.blue;

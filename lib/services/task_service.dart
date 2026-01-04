@@ -86,7 +86,7 @@ class TaskService {
     try {
       final tasks = await getMyTasks();
       return {
-        'pending': tasks.where((t) => t.status == 'pending').length,
+        'assigned': tasks.where((t) => t.status == 'assigned').length,
         'accepted': tasks.where((t) => t.status == 'accepted').length,
         'completed': tasks.where((t) => t.status == 'completed').length,
         'rejected': tasks.where((t) => t.status == 'rejected').length,
@@ -95,7 +95,7 @@ class TaskService {
     } catch (e) {
       developer.log('ERROR getting task counts: $e', name: 'TaskService');
       return {
-        'pending': 0,
+        'assigned': 0,
         'accepted': 0,
         'completed': 0,
         'rejected': 0,
@@ -203,6 +203,94 @@ class TaskService {
     } catch (e, stackTrace) {
       developer.log(
         'ERROR completing task with proof: $e',
+        name: 'TaskService',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
+  /// Get all open (unclaimed) tasks from the marketplace
+  static Future<List<TaskModel>> getOpenTasks() async {
+    try {
+      developer.log('Fetching open tasks...', name: 'TaskService');
+
+      final token = await _getToken();
+      if (token == null) {
+        developer.log('ERROR: No token found', name: 'TaskService');
+        throw Exception('Not authenticated');
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/tasks/open'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      developer.log(
+        'Open tasks response status: ${response.statusCode}',
+        name: 'TaskService',
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          final List<dynamic> taskList = data['data'];
+          developer.log(
+            'Parsed ${taskList.length} open tasks',
+            name: 'TaskService',
+          );
+          return taskList.map((item) => TaskModel.fromJson(item)).toList();
+        }
+        return [];
+      } else {
+        throw Exception('Failed to load open tasks: ${response.statusCode}');
+      }
+    } catch (e, stackTrace) {
+      developer.log(
+        'ERROR: $e',
+        name: 'TaskService',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      throw Exception('Error fetching open tasks: $e');
+    }
+  }
+
+  /// Claim an open task
+  static Future<bool> claimTask(String taskId) async {
+    try {
+      developer.log('Claiming task $taskId', name: 'TaskService');
+
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/tasks/$taskId/claim'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      developer.log(
+        'Claim task response: ${response.statusCode}',
+        name: 'TaskService',
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['success'] == true;
+      }
+      return false;
+    } catch (e, stackTrace) {
+      developer.log(
+        'ERROR claiming task: $e',
         name: 'TaskService',
         error: e,
         stackTrace: stackTrace,
