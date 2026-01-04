@@ -4,16 +4,16 @@ import 'package:volunteer_app/screens/dashboard_screen/task_screen.dart';
 import 'package:volunteer_app/services/task_service.dart';
 import 'package:volunteer_app/theme/app_theme.dart';
 
-class Tasks extends StatefulWidget {
-  const Tasks({super.key});
+class TasksScreen extends StatefulWidget {
+  const TasksScreen({super.key});
 
   @override
-  State<Tasks> createState() => _TasksState();
+  State<TasksScreen> createState() => _TasksScreenState();
 }
 
 enum TaskStatus { Assigned, Accepted, Completed, Rejected }
 
-class _TasksState extends State<Tasks> {
+class _TasksScreenState extends State<TasksScreen> {
   TaskStatus _selectedStatus = TaskStatus.Assigned;
   List<TaskModel> _allTasks = [];
   bool _isLoading = true;
