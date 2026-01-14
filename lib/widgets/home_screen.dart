@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:volunteer_app/components/layout/header.dart';
 import 'package:volunteer_app/screens/Dashboard.dart';
 import 'package:volunteer_app/screens/map_screen.dart';
-import 'package:volunteer_app/screens/Tasks.dart';
 import 'package:volunteer_app/screens/task_pool_screen.dart';
 import 'package:volunteer_app/screens/account_page.dart';
+import 'package:volunteer_app/screens/tasks.dart';
 import 'package:volunteer_app/theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const Dashboard(),
     const TaskPoolScreen(),
     const Map_Screen(),
-    const Tasks(),
+    const TasksScreen(),
     const Account(),
   ];
 

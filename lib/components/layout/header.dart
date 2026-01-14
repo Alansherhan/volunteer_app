@@ -93,18 +93,18 @@ class _HeaderState extends State<Header> {
               onTap: _navigateToNotifications,
               child: Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: AppTheme.softShadow,
-                ),
+                // decoration: BoxDecoration(
+                //   color: AppTheme.surfaceColor,
+                //   borderRadius: BorderRadius.circular(14),
+                //   boxShadow: AppTheme.softShadow,
+                // ),
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
                     Icon(
                       Icons.notifications_outlined,
                       color: AppTheme.textPrimary,
-                      size: 24,
+                      size: 28,
                     ),
                     if (_unreadCount > 0)
                       Positioned(
@@ -122,13 +122,13 @@ class _HeaderState extends State<Header> {
                           ),
                           constraints: const BoxConstraints(
                             minWidth: 18,
-                            minHeight: 18,
+                            minHeight: 20,
                           ),
                           child: Text(
                             _unreadCount > 99 ? '99+' : '$_unreadCount',
                             style: AppTheme.mainFont(
                               color: Colors.white,
-                              fontSize: 9,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,

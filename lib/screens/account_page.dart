@@ -81,6 +81,7 @@ class _AccountState extends State<Account> with SingleTickerProviderStateMixin {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final userData = data['data'];
+        print(userData.toString());
 
         setState(() {
           userName = userData['name'] ?? 'User';
