@@ -10,6 +10,12 @@ class TaskModel {
   final Map<String, dynamic>? aidRequest;
   final Map<String, dynamic>? donationRequest;
 
+  // Multi-volunteer support
+  final int volunteersNeeded;
+  final int currentVolunteerCount;
+  final int remainingSlots;
+  final List<String> assignedVolunteers;
+
   TaskModel({
     required this.id,
     required this.taskName,
@@ -20,9 +26,31 @@ class TaskModel {
     this.createdAt,
     this.aidRequest,
     this.donationRequest,
+    this.volunteersNeeded = 1,
+    this.currentVolunteerCount = 0,
+    this.remainingSlots = 1,
+    this.assignedVolunteers = const [],
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
+    // Handle assignedVolunteers array - can be list of objects or strings
+    List<String> volunteers = [];
+    if (json['assignedVolunteers'] != null) {
+      final rawVolunteers = json['assignedVolunteers'] as List;
+      volunteers = rawVolunteers
+          .map((v) {
+            if (v is String) return v;
+            if (v is Map)
+              return v['_id']?.toString() ?? v['id']?.toString() ?? '';
+            return '';
+          })
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+
+    final volunteersNeeded = json['volunteersNeeded'] ?? 1;
+    final currentCount = json['currentVolunteerCount'] ?? volunteers.length;
+
     return TaskModel(
       id: json['_id'] ?? json['id'] ?? '',
       taskName: json['taskName'] ?? '',
@@ -39,6 +67,11 @@ class TaskModel {
       donationRequest: json['donationRequest'] is Map<String, dynamic>
           ? json['donationRequest']
           : null,
+      volunteersNeeded: volunteersNeeded,
+      currentVolunteerCount: currentCount,
+      remainingSlots:
+          json['remainingSlots'] ?? (volunteersNeeded - currentCount),
+      assignedVolunteers: volunteers,
     );
   }
 
@@ -53,6 +86,10 @@ class TaskModel {
       'createdAt': createdAt?.toIso8601String(),
       'aidRequest': aidRequest,
       'donationRequest': donationRequest,
+      'volunteersNeeded': volunteersNeeded,
+      'currentVolunteerCount': currentVolunteerCount,
+      'remainingSlots': remainingSlots,
+      'assignedVolunteers': assignedVolunteers,
     };
   }
 
@@ -108,5 +145,20 @@ class TaskModel {
       return donationRequest!['location'];
     }
     return null;
+  }
+
+  /// Check if task has open slots for more volunteers
+  bool get hasOpenSlots => remainingSlots > 0;
+
+  /// Returns volunteer slots info string (e.g., "2/3 volunteers")
+  String get volunteerSlotsInfo {
+    return '$currentVolunteerCount/$volunteersNeeded volunteers';
+  }
+
+  /// Returns remaining slots info string (e.g., "1 spot left")
+  String get remainingSlotsInfo {
+    if (remainingSlots <= 0) return 'Full';
+    if (remainingSlots == 1) return '1 spot left';
+    return '$remainingSlots spots left';
   }
 }
