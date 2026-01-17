@@ -138,12 +138,29 @@ class TaskModel {
 
   /// Get location from aid or donation request
   String? get location {
+    dynamic loc;
     if (aidRequest != null && aidRequest!['location'] != null) {
-      return aidRequest!['location'];
+      loc = aidRequest!['location'];
+    } else if (donationRequest != null &&
+        donationRequest!['location'] != null) {
+      loc = donationRequest!['location'];
     }
-    if (donationRequest != null && donationRequest!['location'] != null) {
-      return donationRequest!['location'];
+
+    if (loc == null) return null;
+
+    // Handle case where location is a Map object
+    if (loc is Map<String, dynamic>) {
+      // Try to get address string from the location object
+      return loc['address']?.toString() ??
+          loc['formattedAddress']?.toString() ??
+          loc['name']?.toString();
     }
+
+    // Handle case where location is already a string
+    if (loc is String) {
+      return loc;
+    }
+
     return null;
   }
 
