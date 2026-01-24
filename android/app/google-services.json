@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "792362468045",
+    "project_id": "relieflow",
+    "storage_bucket": "relieflow.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:792362468045:android:f082d12778752d94709f84",
+        "android_client_info": {
+          "package_name": "com.example.reliefflow_frontend_public_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB17r5RlSs_3TuXEEscVaofrFFnkTl0fJ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:792362468045:android:014cabbceedf7b26709f84",
+        "android_client_info": {
+          "package_name": "com.example.volunteer_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB17r5RlSs_3TuXEEscVaofrFFnkTl0fJ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
