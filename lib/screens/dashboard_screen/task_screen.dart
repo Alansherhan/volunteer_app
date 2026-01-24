@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:volunteer_app/env.dart';
 import 'package:volunteer_app/models/task_model.dart';
-import 'package:volunteer_app/screens/map_screen.dart';
 import 'package:volunteer_app/services/task_service.dart';
 import 'package:volunteer_app/theme/app_theme.dart';
 
@@ -19,6 +20,15 @@ class _TaskScreenState extends State<TaskScreen> {
   bool _isLoading = false;
   File? _selectedProofImage;
   final ImagePicker _imagePicker = ImagePicker();
+
+  /// Helper to get full image URL from relative path
+  String _getFullImageUrl(String imageUrl) {
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    // Prepend base URL to relative path
+    return '$kImageUrl$imageUrl';
+  }
 
   Future<void> _updateStatus(String newStatus) async {
     setState(() => _isLoading = true);
@@ -534,7 +544,7 @@ class _TaskScreenState extends State<TaskScreen> {
             // Image if available
             if (task.imageUrl != null && task.imageUrl!.isNotEmpty) ...[
               const SizedBox(height: 16),
-              _buildImageCard(task.imageUrl!),
+              _buildImageCard(_getFullImageUrl(task.imageUrl!)),
             ],
 
             const SizedBox(height: 32),
@@ -678,22 +688,50 @@ class _TaskScreenState extends State<TaskScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const Map_Screen()),
-                );
+              onPressed: () async {
+                final coords = widget.task.coordinates;
+                if (coords != null) {
+                  final lat = coords['latitude'];
+                  final lng = coords['longitude'];
+                  // Google Maps URL for navigation
+                  final googleMapsUrl = Uri.parse(
+                    'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+                  );
+                  if (await canLaunchUrl(googleMapsUrl)) {
+                    await launchUrl(
+                      googleMapsUrl,
+                      mode: LaunchMode.externalApplication,
+                    );
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Could not open Google Maps'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('No location coordinates available'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
               },
-              icon: const Icon(Icons.map_rounded, size: 18),
+              icon: const Icon(Icons.navigation_rounded, size: 18),
               label: Text(
-                'View on Map',
+                'Navigate',
                 style: AppTheme.mainFont(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                foregroundColor: AppTheme.primaryColor,
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -892,7 +930,7 @@ class _TaskScreenState extends State<TaskScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
-                imageUrl,
+                _getFullImageUrl(imageUrl.toString()),
                 width: double.infinity,
                 height: 180,
                 fit: BoxFit.cover,

@@ -138,27 +138,124 @@ class TaskModel {
 
   /// Get location from aid or donation request
   String? get location {
+    // For aid requests
+    if (aidRequest != null) {
+      // First try formattedAddress (virtual field from backend)
+      if (aidRequest!['formattedAddress'] != null &&
+          aidRequest!['formattedAddress'].toString().trim().isNotEmpty) {
+        return aidRequest!['formattedAddress'].toString();
+      }
+
+      // Then try to construct from address object
+      final address = aidRequest!['address'];
+      if (address is Map<String, dynamic>) {
+        final parts = <String>[];
+        if (address['addressLine1'] != null &&
+            address['addressLine1'].toString().trim().isNotEmpty) {
+          parts.add(address['addressLine1'].toString());
+        }
+        if (address['addressLine2'] != null &&
+            address['addressLine2'].toString().trim().isNotEmpty) {
+          parts.add(address['addressLine2'].toString());
+        }
+        if (address['addressLine3'] != null &&
+            address['addressLine3'].toString().trim().isNotEmpty) {
+          parts.add(address['addressLine3'].toString());
+        }
+        if (address['pinCode'] != null &&
+            address['pinCode'].toString().trim().isNotEmpty) {
+          parts.add('- ${address['pinCode']}');
+        }
+        if (parts.isNotEmpty) {
+          return parts.join(', ');
+        }
+      }
+    }
+
+    // For donation requests
+    if (donationRequest != null) {
+      // First try formattedAddress
+      if (donationRequest!['formattedAddress'] != null &&
+          donationRequest!['formattedAddress'].toString().trim().isNotEmpty) {
+        return donationRequest!['formattedAddress'].toString();
+      }
+
+      // Try location field
+      final loc = donationRequest!['location'];
+      if (loc != null) {
+        if (loc is String && loc.trim().isNotEmpty) {
+          return loc;
+        }
+        if (loc is Map<String, dynamic>) {
+          return loc['address']?.toString() ??
+              loc['formattedAddress']?.toString() ??
+              loc['name']?.toString();
+        }
+      }
+
+      // Try address object for donation requests too
+      final address = donationRequest!['address'];
+      if (address is Map<String, dynamic>) {
+        final parts = <String>[];
+        if (address['addressLine1'] != null &&
+            address['addressLine1'].toString().trim().isNotEmpty) {
+          parts.add(address['addressLine1'].toString());
+        }
+        if (address['addressLine2'] != null &&
+            address['addressLine2'].toString().trim().isNotEmpty) {
+          parts.add(address['addressLine2'].toString());
+        }
+        if (address['addressLine3'] != null &&
+            address['addressLine3'].toString().trim().isNotEmpty) {
+          parts.add(address['addressLine3'].toString());
+        }
+        if (address['pinCode'] != null &&
+            address['pinCode'].toString().trim().isNotEmpty) {
+          parts.add('- ${address['pinCode']}');
+        }
+        if (parts.isNotEmpty) {
+          return parts.join(', ');
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /// Get coordinates from aid or donation request location (GeoJSON format)
+  /// Returns a map with 'latitude' and 'longitude' keys, or null if not available
+  Map<String, double>? get coordinates {
     dynamic loc;
-    if (aidRequest != null && aidRequest!['location'] != null) {
+
+    // Check aidRequest first
+    if (aidRequest != null) {
       loc = aidRequest!['location'];
-    } else if (donationRequest != null &&
-        donationRequest!['location'] != null) {
+      // Also check nested in address
+      if (loc == null && aidRequest!['address'] is Map) {
+        loc = (aidRequest!['address'] as Map)['location'];
+      }
+    }
+
+    // Then check donationRequest
+    if (loc == null && donationRequest != null) {
       loc = donationRequest!['location'];
+      if (loc == null && donationRequest!['address'] is Map) {
+        loc = (donationRequest!['address'] as Map)['location'];
+      }
     }
 
     if (loc == null) return null;
 
-    // Handle case where location is a Map object
+    // Handle GeoJSON format: { type: "Point", coordinates: [lng, lat] }
     if (loc is Map<String, dynamic>) {
-      // Try to get address string from the location object
-      return loc['address']?.toString() ??
-          loc['formattedAddress']?.toString() ??
-          loc['name']?.toString();
-    }
-
-    // Handle case where location is already a string
-    if (loc is String) {
-      return loc;
+      final coords = loc['coordinates'];
+      if (coords is List && coords.length >= 2) {
+        final lng = coords[0];
+        final lat = coords[1];
+        if (lng is num && lat is num) {
+          return {'latitude': lat.toDouble(), 'longitude': lng.toDouble()};
+        }
+      }
     }
 
     return null;

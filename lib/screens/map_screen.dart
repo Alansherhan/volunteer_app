@@ -5,10 +5,22 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:volunteer_app/env.dart';
+import 'package:volunteer_app/services/navigation_service.dart';
 import 'package:volunteer_app/theme/app_theme.dart';
 
 class Map_Screen extends StatefulWidget {
-  const Map_Screen({super.key});
+  final double? initialLatitude;
+  final double? initialLongitude;
+  final String? markerTitle;
+  final bool showNavigation; // Enable navigation mode with route display
+
+  const Map_Screen({
+    super.key,
+    this.initialLatitude,
+    this.initialLongitude,
+    this.markerTitle,
+    this.showNavigation = false,
+  });
 
   @override
   State<Map_Screen> createState() => _Map_ScreenState();
@@ -32,11 +44,30 @@ class _Map_ScreenState extends State<Map_Screen> {
   Set<Marker> _markers = {};
   LatLng? _selectedLocation;
 
+  // Navigation/Route state
+  Set<Polyline> _polylines = {};
+  List<Map<String, dynamic>> _directionSteps = [];
+  String _routeDistance = '';
+  String _routeDuration = '';
+  bool _isLoadingRoute = false;
+  LatLng? _userLocation;
+
+  /// Check if we have initial coordinates to show
+  bool get _hasInitialCoordinates =>
+      widget.initialLatitude != null && widget.initialLongitude != null;
+
   @override
   void initState() {
     super.initState();
-    _getUserLocation();
     _searchController.addListener(_onSearchChanged);
+
+    if (_hasInitialCoordinates) {
+      // If we have initial coordinates, use them
+      _initializeWithCoordinates();
+    } else {
+      // Otherwise get user's location
+      _getUserLocation();
+    }
   }
 
   @override
@@ -46,6 +77,123 @@ class _Map_ScreenState extends State<Map_Screen> {
     _searchFocusNode.dispose();
     _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  void _initializeWithCoordinates() async {
+    final destLat = widget.initialLatitude!;
+    final destLng = widget.initialLongitude!;
+    final destination = LatLng(destLat, destLng);
+
+    // Get user's current location first
+    LatLng? userPos;
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      userPos = LatLng(position.latitude, position.longitude);
+    } catch (e) {
+      // Use a default if we can't get location
+      userPos = null;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _selectedLocation = destination;
+      _userLocation = userPos;
+
+      // Set markers
+      _markers = {
+        // Destination marker (red)
+        Marker(
+          markerId: const MarkerId('destination'),
+          position: destination,
+          infoWindow: InfoWindow(title: widget.markerTitle ?? 'Destination'),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        ),
+      };
+
+      // Add origin marker if we have user location
+      if (userPos != null) {
+        _markers.add(
+          Marker(
+            markerId: const MarkerId('origin'),
+            position: userPos,
+            infoWindow: const InfoWindow(title: 'Your Location'),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueAzure,
+            ),
+          ),
+        );
+      }
+
+      _currentPosition = userPos ?? destination;
+      _isLoading = false;
+    });
+
+    // Fetch route if navigation mode and we have user location
+    if (widget.showNavigation && userPos != null) {
+      _fetchRoute(userPos, destination);
+    }
+  }
+
+  Future<void> _fetchRoute(LatLng origin, LatLng destination) async {
+    setState(() => _isLoadingRoute = true);
+
+    final routeData = await NavigationService.getRoute(
+      origin: origin,
+      destination: destination,
+    );
+
+    if (!mounted) return;
+
+    if (routeData != null) {
+      final polylinePoints = routeData['polylinePoints'] as List<LatLng>;
+
+      setState(() {
+        _routeDistance = routeData['distance'];
+        _routeDuration = routeData['duration'];
+        _directionSteps = List<Map<String, dynamic>>.from(routeData['steps']);
+        _isLoadingRoute = false;
+
+        _polylines = {
+          Polyline(
+            polylineId: const PolylineId('route'),
+            points: polylinePoints,
+            color: AppTheme.primaryColor,
+            width: 5,
+          ),
+        };
+      });
+
+      // Fit map to show entire route
+      _fitMapToRoute(origin, destination);
+    } else {
+      setState(() => _isLoadingRoute = false);
+    }
+  }
+
+  void _fitMapToRoute(LatLng origin, LatLng destination) {
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        origin.latitude < destination.latitude
+            ? origin.latitude
+            : destination.latitude,
+        origin.longitude < destination.longitude
+            ? origin.longitude
+            : destination.longitude,
+      ),
+      northeast: LatLng(
+        origin.latitude > destination.latitude
+            ? origin.latitude
+            : destination.latitude,
+        origin.longitude > destination.longitude
+            ? origin.longitude
+            : destination.longitude,
+      ),
+    );
+
+    mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
   }
 
   void _onSearchChanged() {
@@ -263,6 +411,7 @@ class _Map_ScreenState extends State<Map_Screen> {
                     myLocationEnabled: true,
                     myLocationButtonEnabled: false,
                     markers: _markers,
+                    polylines: _polylines,
                     mapToolbarEnabled: false,
                     zoomControlsEnabled: false,
                     onTap: (_) {
@@ -273,6 +422,15 @@ class _Map_ScreenState extends State<Map_Screen> {
                     },
                   ),
                 ),
+
+                // Navigation Info Bar (when showing route)
+                if (widget.showNavigation && _routeDistance.isNotEmpty)
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    right: 16,
+                    child: _buildNavigationInfoBar(),
+                  ),
 
                 // Search Bar
                 Positioned(
@@ -581,6 +739,227 @@ class _Map_ScreenState extends State<Map_Screen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Build the navigation info bar showing distance and duration
+  Widget _buildNavigationInfoBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.mediumShadow,
+      ),
+      child: Row(
+        children: [
+          // Distance
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.route_rounded,
+              color: AppTheme.primaryColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _routeDistance,
+                  style: AppTheme.mainFont(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                Text(
+                  _routeDuration,
+                  style: AppTheme.mainFont(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Directions button
+          Material(
+            color: AppTheme.primaryColor,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _showDirectionsBottomSheet(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.directions, color: Colors.white, size: 20),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Steps',
+                      style: AppTheme.mainFont(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show bottom sheet with step-by-step directions
+  void _showDirectionsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.textMuted.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(Icons.directions, color: AppTheme.primaryColor),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Directions',
+                      style: AppTheme.mainFont(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '$_routeDistance • $_routeDuration',
+                      style: AppTheme.mainFont(
+                        fontSize: 13,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Steps list
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: _directionSteps.length,
+                  itemBuilder: (context, index) {
+                    final step = _directionSteps[index];
+                    return _buildDirectionStep(step, index);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build a single direction step item
+  Widget _buildDirectionStep(Map<String, dynamic> step, int index) {
+    final instruction = step['instruction'] as String;
+    final distance = step['distance'] as String;
+    final maneuver = step['maneuver'] as String? ?? '';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Step number or maneuver icon
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Center(
+              child: maneuver.isNotEmpty
+                  ? Text(
+                      NavigationService.getManeuverIcon(maneuver),
+                      style: const TextStyle(fontSize: 18),
+                    )
+                  : Text(
+                      '${index + 1}',
+                      style: AppTheme.mainFont(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
+                        fontSize: 14,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          // Instruction text
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  instruction,
+                  style: AppTheme.mainFont(
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  distance,
+                  style: AppTheme.mainFont(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
