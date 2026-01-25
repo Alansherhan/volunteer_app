@@ -541,12 +541,6 @@ class _TaskScreenState extends State<TaskScreen> {
               _buildDonationRequestDetails(task.donationRequest!),
             ],
 
-            // Image if available
-            if (task.imageUrl != null && task.imageUrl!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _buildImageCard(_getFullImageUrl(task.imageUrl!)),
-            ],
-
             const SizedBox(height: 32),
 
             // Action Buttons
