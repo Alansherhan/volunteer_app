@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'package:volunteer_app/env.dart';
 import 'package:volunteer_app/services/navigation_service.dart';
 import 'package:volunteer_app/theme/app_theme.dart';
@@ -52,6 +53,10 @@ class _Map_ScreenState extends State<Map_Screen> {
   bool _isLoadingRoute = false;
   LatLng? _userLocation;
 
+  // Relief centers state
+  Set<Marker> _reliefCenterMarkers = {};
+  bool _showReliefCenters = true;
+
   /// Check if we have initial coordinates to show
   bool get _hasInitialCoordinates =>
       widget.initialLatitude != null && widget.initialLongitude != null;
@@ -60,6 +65,7 @@ class _Map_ScreenState extends State<Map_Screen> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _fetchReliefCenters();
 
     if (_hasInitialCoordinates) {
       // If we have initial coordinates, use them
@@ -364,6 +370,326 @@ class _Map_ScreenState extends State<Map_Screen> {
     }
   }
 
+  /// Fetch relief centers from the backend and create markers
+  Future<void> _fetchReliefCenters() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$kBaseUrl/public/relief-centers'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          final List centers = data['message'];
+          final Set<Marker> loadedMarkers = {};
+
+          for (var center in centers) {
+            // Check if location and coordinates exist
+            // Backend schema: location: { type: 'Point', coordinates: [lon, lat] }
+            if (center['address'] != null &&
+                center['address']['location'] != null &&
+                center['address']['location']['coordinates'] != null) {
+              final coordinates = center['address']['location']['coordinates'];
+              final double lon = (coordinates[0] as num).toDouble();
+              final double lat = (coordinates[1] as num).toDouble();
+
+              loadedMarkers.add(
+                Marker(
+                  markerId: MarkerId(
+                    'relief_${center['_id'] ?? center['shelterName']}',
+                  ),
+                  position: LatLng(lat, lon),
+                  infoWindow: InfoWindow(
+                    title: center['shelterName'],
+                    snippet: "Tap for details",
+                  ),
+                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueGreen,
+                  ),
+                  onTap: () => _showReliefCenterDetails(center, lat, lon),
+                ),
+              );
+            }
+          }
+
+          if (!mounted) return;
+          setState(() {
+            _reliefCenterMarkers = loadedMarkers;
+          });
+        }
+      } else {
+        debugPrint('Failed to load relief centers: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error fetching relief centers: $e');
+    }
+  }
+
+  /// Launch phone dialer
+  Future<void> _launchDialer(String number) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: number);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Could not launch dialer',
+              style: AppTheme.mainFont(),
+            ),
+            backgroundColor: AppTheme.warningColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Launch Google Maps for directions
+  Future<void> _launchMaps(double lat, double lon, String? name) async {
+    final googleMapsUrl = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lon${name != null ? '($name)' : ''}',
+    );
+    if (await canLaunchUrl(googleMapsUrl)) {
+      await launchUrl(googleMapsUrl, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open maps', style: AppTheme.mainFont()),
+            backgroundColor: AppTheme.warningColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Show relief center details in a bottom sheet
+  void _showReliefCenterDetails(
+    Map<String, dynamic> center,
+    double lat,
+    double lon,
+  ) {
+    final address = center['address'] ?? {};
+    final parts = [
+      address['addressLine1'],
+      address['addressLine2'],
+      address['addressLine3'],
+    ].where((s) => s != null && s.toString().trim().isNotEmpty).join(', ');
+    final pin = address['pinCode'] != null ? ' - ${address['pinCode']}' : '';
+    final fullAddress = '$parts$pin';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: AppTheme.mediumShadow,
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.textMuted.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.successColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.home_rounded,
+                    color: AppTheme.successColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    center['shelterName'] ?? 'Relief Center',
+                    style: AppTheme.mainFont(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Address
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.location_on_rounded,
+                    color: AppTheme.primaryColor,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      fullAddress.isNotEmpty
+                          ? fullAddress
+                          : 'Address details not available',
+                      style: AppTheme.mainFont(
+                        color: AppTheme.textSecondary,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Coordinator info
+            Container(
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.textMuted.withOpacity(0.1)),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: center['coordinatorNumber'] != null
+                      ? () => _launchDialer(center['coordinatorNumber'])
+                      : null,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: AppTheme.surfaceColor,
+                          child: Icon(
+                            Icons.person_rounded,
+                            color: AppTheme.textMuted,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'COORDINATOR',
+                                style: AppTheme.mainFont(
+                                  color: AppTheme.textMuted,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                center['coordinatorName'] ?? 'N/A',
+                                style: AppTheme.mainFont(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              if (center['coordinatorNumber'] != null)
+                                Text(
+                                  center['coordinatorNumber'],
+                                  style: AppTheme.mainFont(
+                                    color: AppTheme.textSecondary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (center['coordinatorNumber'] != null)
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppTheme.successColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.phone_rounded,
+                              color: AppTheme.successColor,
+                              size: 20,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Get Directions button
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _launchMaps(lat, lon, center['shelterName']);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+                icon: const Icon(Icons.directions_rounded, size: 20),
+                label: Text(
+                  'Get Directions',
+                  style: AppTheme.mainFont(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -410,7 +736,9 @@ class _Map_ScreenState extends State<Map_Screen> {
                     },
                     myLocationEnabled: true,
                     myLocationButtonEnabled: false,
-                    markers: _markers,
+                    markers: _showReliefCenters
+                        ? {..._markers, ..._reliefCenterMarkers}
+                        : _markers,
                     polylines: _polylines,
                     mapToolbarEnabled: false,
                     zoomControlsEnabled: false,
@@ -659,6 +987,42 @@ class _Map_ScreenState extends State<Map_Screen> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+
+                // Relief Centers Toggle Button
+                Positioned(
+                  right: 16,
+                  bottom: 250,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: _showReliefCenters
+                          ? AppTheme.successColor
+                          : AppTheme.surfaceColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: AppTheme.mediumShadow,
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {
+                          setState(() {
+                            _showReliefCenters = !_showReliefCenters;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Icon(
+                            Icons.home_rounded,
+                            color: _showReliefCenters
+                                ? Colors.white
+                                : AppTheme.successColor,
+                            size: 24,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
