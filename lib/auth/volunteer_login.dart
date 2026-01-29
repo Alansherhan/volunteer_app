@@ -46,6 +46,9 @@ class _LoginScreenState extends State<LoginScreen> {
         body: jsonEncode({'email': email, 'password': password, 'role': role}),
       );
 
+      //log any static test here to check the response
+      print(response.statusCode);
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final prefs = await SharedPreferences.getInstance();
@@ -85,7 +88,18 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         try {
           final error = jsonDecode(response.body);
-          _showErrorDialog(error['message'] ?? 'Login failed');
+          // Check if there are field-specific validation errors
+          if (error['errors'] != null &&
+              error['errors'] is List &&
+              (error['errors'] as List).isNotEmpty) {
+            final errors = error['errors'] as List;
+            final errorMessages = errors
+                .map((e) => '${e['field']}: ${e['message']}')
+                .join('\n');
+            _showErrorDialog(errorMessages);
+          } else {
+            _showErrorDialog(error['message'] ?? 'Login failed');
+          }
         } catch (e) {
           _showErrorDialog('Server error: ${response.statusCode}');
         }
