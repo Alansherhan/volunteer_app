@@ -121,14 +121,14 @@ class _HeaderState extends State<Header> {
                             ),
                           ),
                           constraints: const BoxConstraints(
-                            minWidth: 18,
-                            minHeight: 20,
+                            minWidth: 10,
+                            minHeight: 14,
                           ),
                           child: Text(
                             _unreadCount > 99 ? '99+' : '$_unreadCount',
                             style: AppTheme.mainFont(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: 8,
                               fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
