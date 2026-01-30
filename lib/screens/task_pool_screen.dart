@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:volunteer_app/models/task_model.dart';
 import 'package:volunteer_app/services/task_service.dart';
 import 'package:volunteer_app/theme/app_theme.dart';
+import 'package:volunteer_app/screens/task_details_preview_screen.dart';
 
 class TaskPoolScreen extends StatefulWidget {
   const TaskPoolScreen({super.key});
@@ -43,6 +44,62 @@ class _TaskPoolScreenState extends State<TaskPoolScreen> {
   }
 
   Future<void> _claimTask(TaskModel task) async {
+    // Show confirmation dialog with warning
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Claim this Task?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('You are about to claim: "${task.taskName}"'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'This will immediately assign the task to you and notify the requester.',
+                      style: TextStyle(fontSize: 12, color: Colors.black87),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Claim & Start'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     setState(() {
       _claimingTaskId = task.id;
     });
@@ -226,8 +283,26 @@ class _TaskPoolScreenState extends State<TaskPoolScreen> {
         itemCount: _openTasks.length,
         itemBuilder: (context, index) {
           final task = _openTasks[index];
-          return _buildTaskCard(task);
+          return GestureDetector(
+            onTap: () => _showTaskDetails(task),
+            child: _buildTaskCard(task),
+          );
         },
+      ),
+    );
+  }
+
+  void _showTaskDetails(TaskModel task) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TaskDetailsPreviewScreen(
+          task: task,
+          onClaim: () {
+            Navigator.pop(context); // Close preview
+            _claimTask(task);
+          },
+        ),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -28,46 +29,6 @@ class _TaskScreenState extends State<TaskScreen> {
     }
     // Prepend base URL to relative path
     return '$kImageUrl$imageUrl';
-  }
-
-  Future<void> _updateStatus(String newStatus) async {
-    setState(() => _isLoading = true);
-
-    final success = await TaskService.updateTaskStatus(
-      widget.task.id,
-      newStatus,
-    );
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              newStatus == 'accepted'
-                  ? 'Task started!'
-                  : newStatus == 'completed'
-                  ? 'Task completed!'
-                  : 'Task rejected',
-            ),
-            backgroundColor: newStatus == 'rejected'
-                ? Colors.red
-                : AppTheme.successColor,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        Navigator.pop(context, true); // Return true to indicate update
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to update task'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -544,22 +505,7 @@ class _TaskScreenState extends State<TaskScreen> {
             const SizedBox(height: 32),
 
             // Action Buttons
-            if (task.status == 'assigned') ...[
-              _buildActionButton(
-                label: 'Accept Task',
-                icon: Icons.check_rounded,
-                color: AppTheme.primaryColor,
-                onPressed: () => _updateStatus('accepted'),
-              ),
-              const SizedBox(height: 12),
-              _buildActionButton(
-                label: 'Reject Task',
-                icon: Icons.close_rounded,
-                color: Colors.red,
-                isOutlined: true,
-                onPressed: () => _updateStatus('rejected'),
-              ),
-            ] else if (task.status == 'accepted') ...[
+            if (task.status == 'accepted') ...[
               _buildActionButton(
                 label: 'Mark as Complete',
                 icon: Icons.check_circle_rounded,
@@ -826,6 +772,7 @@ class _TaskScreenState extends State<TaskScreen> {
     final description = aidRequest['description'] ?? '';
     final formattedAddress = aidRequest['formattedAddress'] ?? '';
     final requester = aidRequest['aidRequestedBy'];
+    log('requester ' + requester.toString());
     final requesterName = requester is Map
         ? (requester['name'] ?? 'Unknown')
         : 'Unknown';
@@ -958,6 +905,8 @@ class _TaskScreenState extends State<TaskScreen> {
     final itemDetails = donationRequest['itemDetails'] as List<dynamic>? ?? [];
     final deadline = donationRequest['deadline'];
     final upiNumber = donationRequest['upiNumber'];
+    print('hacked');
+    print(donationRequest.toString());
     final requester =
         donationRequest['requestedUser'] ?? donationRequest['requestedBy'];
     final requesterName = requester is Map

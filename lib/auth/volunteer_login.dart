@@ -17,7 +17,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   String email = '';
-  String role = 'volunteer';
+  String role = '';
   String password = '';
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -30,8 +30,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (email.isEmpty || password.isEmpty) {
       _showErrorDialog('Please enter both email and password');
       return;
-    } else if (role.isEmpty) {
-      _showErrorDialog('User role is not selected');
+    } else if (role == 'public') {
+      _showErrorDialog('You are not authorized to login as public');
       return;
     }
 
@@ -65,14 +65,24 @@ class _LoginScreenState extends State<LoginScreen> {
           await prefs.setString('user_id', userId);
         }
 
+        // Get role from user object (backend returns user data nested inside 'user')
         String? userRole;
-        if (data['role'] != null) {
+        if (data['user'] != null && data['user']['role'] != null) {
+          userRole = data['user']['role'].toString();
+        } else if (data['role'] != null) {
           userRole = data['role'].toString();
-          await prefs.setString('role', userRole);
-          if (userRole == 'volunteer') {
-            return;
-          }
         }
+
+        // Only allow volunteers to login to this app
+        if (userRole != 'volunteer') {
+          await prefs.clear();
+          _showErrorDialog(
+            'Access denied. Only volunteers can login to this app.',
+          );
+          return;
+        }
+
+        await prefs.setString('role', userRole!);
 
         await prefs.setString(kTokenStorageKey, data['token'] ?? '');
         await prefs.setString('email', email);
@@ -121,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Enter your email address and we\'ll send you instructions to reset your password.',
+                'Enter your email address and we\'ll send you an OTP to reset your password.',
                 style: AppTheme.mainFont(
                   fontSize: 14,
                   color: AppTheme.textSecondary,
@@ -187,18 +197,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         }
 
                         if (response.statusCode == 200) {
-                          _showSuccessDialog(
-                            'Password reset instructions have been sent to $resetEmail',
-                          );
+                          // Show OTP verification dialog
+                          _showOtpVerificationDialog(resetEmail);
                         } else {
                           try {
                             final error = jsonDecode(response.body);
                             _showErrorDialog(
-                              error['message'] ?? 'Failed to send reset email',
+                              error['message'] ?? 'Failed to send OTP',
                             );
                           } catch (e) {
                             _showErrorDialog(
-                              'Failed to send reset email. Please try again.',
+                              'Failed to send OTP. Please try again.',
                             );
                           }
                         }
@@ -220,7 +229,204 @@ class _LoginScreenState extends State<LoginScreen> {
                         strokeWidth: 2,
                       ),
                     )
-                  : const Text('Send Reset Link'),
+                  : const Text('Send OTP'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showOtpVerificationDialog(String email) async {
+    final otpController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool isSubmitting = false;
+    bool obscureNewPassword = true;
+    bool obscureConfirmPassword = true;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'Enter OTP',
+            style: AppTheme.mainFont(fontWeight: FontWeight.bold, fontSize: 20),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Enter the 6-digit OTP sent to $email and set your new password.',
+                  style: AppTheme.mainFont(
+                    fontSize: 14,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: otpController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  style: AppTheme.mainFont(
+                    fontSize: 24,
+                    letterSpacing: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    hintText: '------',
+                    counterText: '',
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: newPasswordController,
+                  obscureText: obscureNewPassword,
+                  style: AppTheme.mainFont(),
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(
+                      Icons.lock_outline_rounded,
+                      color: AppTheme.primaryColor,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureNewPassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        color: AppTheme.textMuted,
+                      ),
+                      onPressed: () => setDialogState(
+                        () => obscureNewPassword = !obscureNewPassword,
+                      ),
+                    ),
+                    hintText: 'New Password',
+                    labelText: 'New Password',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: confirmPasswordController,
+                  obscureText: obscureConfirmPassword,
+                  style: AppTheme.mainFont(),
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(
+                      Icons.lock_outline_rounded,
+                      color: AppTheme.primaryColor,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureConfirmPassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        color: AppTheme.textMuted,
+                      ),
+                      onPressed: () => setDialogState(
+                        () => obscureConfirmPassword = !obscureConfirmPassword,
+                      ),
+                    ),
+                    hintText: 'Confirm Password',
+                    labelText: 'Confirm Password',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: AppTheme.mainFont(color: AppTheme.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      final otp = otpController.text.trim();
+                      final newPassword = newPasswordController.text;
+                      final confirmPassword = confirmPasswordController.text;
+
+                      if (otp.length != 6) {
+                        _showErrorDialog('Please enter the 6-digit OTP');
+                        return;
+                      }
+
+                      if (newPassword.length < 6) {
+                        _showErrorDialog(
+                          'Password must be at least 6 characters',
+                        );
+                        return;
+                      }
+
+                      if (newPassword != confirmPassword) {
+                        _showErrorDialog('Passwords do not match');
+                        return;
+                      }
+
+                      setDialogState(() {
+                        isSubmitting = true;
+                      });
+
+                      try {
+                        final response = await http.post(
+                          Uri.parse('$kBaseUrl/public/reset-password'),
+                          headers: {'Content-Type': 'application/json'},
+                          body: jsonEncode({
+                            'email': email,
+                            'otp': otp,
+                            'newPassword': newPassword,
+                          }),
+                        );
+
+                        if (mounted) {
+                          Navigator.of(context).pop();
+                        }
+
+                        if (response.statusCode == 200) {
+                          _showSuccessDialog(
+                            'Password has been reset successfully. Please login with your new password.',
+                          );
+                        } else {
+                          try {
+                            final error = jsonDecode(response.body);
+                            _showErrorDialog(
+                              error['message'] ?? 'Failed to reset password',
+                            );
+                          } catch (e) {
+                            _showErrorDialog(
+                              'Failed to reset password. Please try again.',
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          Navigator.of(context).pop();
+                        }
+                        _showErrorDialog(
+                          'Network error: Please check your connection',
+                        );
+                      }
+                    },
+              child: isSubmitting
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text('Reset Password'),
             ),
           ],
         ),
