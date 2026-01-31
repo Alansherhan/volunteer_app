@@ -31,6 +31,15 @@ class _TaskScreenState extends State<TaskScreen> {
     return '$kImageUrl$imageUrl';
   }
 
+  void _showFullScreenImage(String imageUrl) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+            _FullScreenImageView(imageUrl: _getFullImageUrl(imageUrl)),
+      ),
+    );
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
@@ -493,13 +502,16 @@ class _TaskScreenState extends State<TaskScreen> {
 
             // Aid Request Details
             if (task.taskType == 'aid' && task.aidRequest != null) ...[
-              _buildAidRequestDetails(task.aidRequest!),
+              _buildAidRequestDetails(task.aidRequest!, task.imageUrl),
             ],
 
             // Donation Request Details
             if (task.taskType == 'donation' &&
                 task.donationRequest != null) ...[
-              _buildDonationRequestDetails(task.donationRequest!),
+              _buildDonationRequestDetails(
+                task.donationRequest!,
+                task.imageUrl,
+              ),
             ],
 
             const SizedBox(height: 32),
@@ -763,7 +775,10 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 
-  Widget _buildAidRequestDetails(Map<String, dynamic> aidRequest) {
+  Widget _buildAidRequestDetails(
+    Map<String, dynamic> aidRequest,
+    String? taskImageUrl,
+  ) {
     final calamity = aidRequest['calamity'];
     final calamityName =
         calamity?['calamityName'] ??
@@ -779,7 +794,8 @@ class _TaskScreenState extends State<TaskScreen> {
     final requesterPhone = requester is Map
         ? (requester['phone'] ?? requester['email'] ?? '')
         : '';
-    final imageUrl = aidRequest['imageUrl'];
+    // Use aidRequest imageUrl or fallback to task imageUrl
+    final imageUrl = aidRequest['imageUrl'] ?? taskImageUrl;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -868,21 +884,69 @@ class _TaskScreenState extends State<TaskScreen> {
           // Aid Request Image
           if (imageUrl != null && imageUrl.toString().isNotEmpty) ...[
             const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                _getFullImageUrl(imageUrl.toString()),
+            GestureDetector(
+              onTap: () => _showFullScreenImage(imageUrl.toString()),
+              child: Container(
                 width: double.infinity,
                 height: 180,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 100,
-                  color: AppTheme.primaryColor.withOpacity(0.1),
-                  child: Center(
-                    child: Icon(
-                      Icons.broken_image_outlined,
-                      color: AppTheme.textSecondary,
-                    ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.primaryColor.withOpacity(0.2),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        _getFullImageUrl(imageUrl.toString()),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppTheme.primaryColor.withOpacity(0.1),
+                          child: Center(
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.fullscreen,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Tap to enlarge',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -893,7 +957,10 @@ class _TaskScreenState extends State<TaskScreen> {
     );
   }
 
-  Widget _buildDonationRequestDetails(Map<String, dynamic> donationRequest) {
+  Widget _buildDonationRequestDetails(
+    Map<String, dynamic> donationRequest,
+    String? taskImageUrl,
+  ) {
     final title = donationRequest['title'] ?? '';
     final description = donationRequest['description'] ?? '';
     final donationType = donationRequest['donationType'] ?? 'item';
@@ -917,6 +984,8 @@ class _TaskScreenState extends State<TaskScreen> {
         : '';
     final proofImages = donationRequest['proofImages'] as List<dynamic>? ?? [];
     final formattedAddress = _getFormattedAddress(donationRequest['address']);
+    // Use task imageUrl if no proof images
+    final fallbackImageUrl = taskImageUrl;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1144,23 +1213,99 @@ class _TaskScreenState extends State<TaskScreen> {
                     padding: EdgeInsets.only(
                       right: index < proofImages.length - 1 ? 8 : 0,
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        proofImages[index].toString(),
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
+                    child: GestureDetector(
+                      onTap: () =>
+                          _showFullScreenImage(proofImages[index].toString()),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          proofImages[index].toString(),
                           width: 120,
                           height: 120,
-                          color: AppTheme.primaryColor.withOpacity(0.1),
-                          child: const Icon(Icons.broken_image_outlined),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                width: 120,
+                                height: 120,
+                                color: AppTheme.primaryColor.withOpacity(0.1),
+                                child: const Icon(Icons.broken_image_outlined),
+                              ),
                         ),
                       ),
                     ),
                   );
                 },
+              ),
+            ),
+          ] else if (fallbackImageUrl != null &&
+              fallbackImageUrl.isNotEmpty) ...[
+            // Fallback to task image if no proof images
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () => _showFullScreenImage(fallbackImageUrl),
+              child: Container(
+                width: double.infinity,
+                height: 180,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.primaryColor.withOpacity(0.2),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        _getFullImageUrl(fallbackImageUrl),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppTheme.primaryColor.withOpacity(0.1),
+                          child: Center(
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.fullscreen,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Tap to enlarge',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -1307,5 +1452,65 @@ class _TaskScreenState extends State<TaskScreen> {
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }
+  }
+}
+
+// Full Screen Image View for Task Photos
+class _FullScreenImageView extends StatelessWidget {
+  final String imageUrl;
+
+  const _FullScreenImageView({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Proof Image', style: TextStyle(color: Colors.white)),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          panEnabled: true,
+          boundaryMargin: const EdgeInsets.all(20),
+          minScale: 0.5,
+          maxScale: 4,
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                      : null,
+                  color: Colors.white,
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.broken_image_outlined,
+                    size: 64,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Failed to load image',
+                    style: TextStyle(color: Colors.grey[400], fontSize: 16),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
 }

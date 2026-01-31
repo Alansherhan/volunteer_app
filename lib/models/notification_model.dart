@@ -6,6 +6,8 @@ class NotificationModel {
   final String type;
   final bool isRead;
   final DateTime createdAt;
+  final Map<String, dynamic>? data;
+  final String? taskId;
 
   NotificationModel({
     required this.id,
@@ -15,6 +17,8 @@ class NotificationModel {
     required this.type,
     required this.isRead,
     required this.createdAt,
+    this.data,
+    this.taskId,
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +32,10 @@ class NotificationModel {
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
+      data: json['data'] != null
+          ? Map<String, dynamic>.from(json['data'])
+          : null,
+      taskId: json['taskId'] ?? json['data']?['taskId'],
     );
   }
 
@@ -40,6 +48,8 @@ class NotificationModel {
       'type': type,
       'isRead': isRead,
       'createdAt': createdAt.toIso8601String(),
+      if (data != null) 'data': data,
+      if (taskId != null) 'taskId': taskId,
     };
   }
 

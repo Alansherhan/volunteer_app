@@ -36,9 +36,12 @@ class _HeaderState extends State<Header> {
   }
 
   void _navigateToNotifications() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const NotificationScreen()));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/notifications'),
+        builder: (context) => const NotificationScreen(),
+      ),
+    );
     _loadUnreadCount();
   }
 

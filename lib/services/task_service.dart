@@ -298,4 +298,52 @@ class TaskService {
       return false;
     }
   }
+
+  /// Fetch a single task by ID
+  static Future<TaskModel?> getTaskById(String taskId) async {
+    try {
+      developer.log('Fetching task by ID: $taskId', name: 'TaskService');
+
+      final token = await _getToken();
+      if (token == null) {
+        developer.log('ERROR: No token found', name: 'TaskService');
+        return null;
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/tasks/$taskId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      developer.log(
+        'Get task by ID response: ${response.statusCode}',
+        name: 'TaskService',
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          developer.log('Task fetched successfully', name: 'TaskService');
+          return TaskModel.fromJson(data['data']);
+        }
+      }
+
+      developer.log(
+        'Failed to fetch task: ${response.statusCode}',
+        name: 'TaskService',
+      );
+      return null;
+    } catch (e, stackTrace) {
+      developer.log(
+        'ERROR fetching task by ID: $e',
+        name: 'TaskService',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
 }
