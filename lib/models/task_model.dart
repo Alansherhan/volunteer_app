@@ -49,6 +49,16 @@ class TaskModel {
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
+    // Debug: Log raw pickup/delivery data
+    print('[TaskModel] Parsing task: ${json['_id']}');
+    print('[TaskModel] pickupLocation: ${json['pickupLocation']}');
+    print('[TaskModel] pickupAddress: ${json['pickupAddress']}');
+    print('[TaskModel] deliveryLocation: ${json['deliveryLocation']}');
+    print('[TaskModel] deliveryAddress: ${json['deliveryAddress']}');
+    print(
+      '[TaskModel] donationRequest address: ${json['donationRequest']?['address']}',
+    );
+
     // Handle assignedVolunteers array - can be list of objects or strings
     List<String> volunteers = [];
     if (json['assignedVolunteers'] != null) {
@@ -364,6 +374,9 @@ class TaskModel {
         parts.add('- ${deliveryAddress!['pinCode']}');
       }
       if (parts.isNotEmpty) {
+        print(
+          '[TaskModel] deliveryAddressString from deliveryAddress: ${parts.join(', ')}',
+        );
         return parts.join(', ');
       }
     }
@@ -371,6 +384,7 @@ class TaskModel {
     // Fallback to donation request address
     if (donationRequest != null) {
       final address = donationRequest!['address'];
+      print('[TaskModel] Checking donationRequest address fallback: $address');
       if (address is Map<String, dynamic>) {
         final parts = <String>[];
         if (address['addressLine1'] != null &&
@@ -390,10 +404,14 @@ class TaskModel {
           parts.add('- ${address['pinCode']}');
         }
         if (parts.isNotEmpty) {
+          print(
+            '[TaskModel] deliveryAddressString from donationRequest fallback: ${parts.join(', ')}',
+          );
           return parts.join(', ');
         }
       }
     }
+    print('[TaskModel] deliveryAddressString returning null');
     return null;
   }
 
