@@ -120,6 +120,8 @@ class NotificationRouter {
         case NotificationType.taskStatusUpdated:
         case NotificationType.taskCompleted:
         case NotificationType.taskRejected:
+        case NotificationType
+            .taskOpenBroadcast: // New task available for claiming
           return await _navigateToTaskDetail(navigator, payload, source);
 
         // Broadcast and other notifications - these don't have a detail screen
@@ -166,6 +168,7 @@ class NotificationRouter {
         'No taskId in payload, falling back to notifications',
         name: 'NotificationRouter',
       );
+      _showErrorSnackbar(navigator, 'Task ID not found in notification');
       if (source != NavigationSource.notificationScreen) {
         _navigateToNotifications(navigator, source);
       }
@@ -185,13 +188,31 @@ class NotificationRouter {
       return NotificationTapResult.navigated;
     } else {
       developer.log(
-        'Failed to fetch task, falling back to notifications',
+        'Failed to fetch task $taskId, showing error',
         name: 'NotificationRouter',
       );
-      if (source != NavigationSource.notificationScreen) {
-        _navigateToNotifications(navigator, source);
-      }
+      _showErrorSnackbar(
+        navigator,
+        'Could not load task details. The task may have been removed or you don\'t have access.',
+      );
       return NotificationTapResult.failed;
+    }
+  }
+
+  /// Show error snackbar using the navigator's context
+  void _showErrorSnackbar(NavigatorState navigator, String message) {
+    try {
+      final context = navigator.context;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      developer.log('Could not show snackbar: $e', name: 'NotificationRouter');
     }
   }
 

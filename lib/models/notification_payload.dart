@@ -6,7 +6,7 @@ enum NotificationType {
   taskStatusUpdated,
   taskCompleted,
   taskRejected,
-
+  taskOpenBroadcast, // New task available for claiming
   // Admin notifications
   adminBroadcast,
 
@@ -32,6 +32,8 @@ extension NotificationTypeExtension on NotificationType {
         return 'task_completed';
       case NotificationType.taskRejected:
         return 'task_rejected';
+      case NotificationType.taskOpenBroadcast:
+        return 'task_open_broadcast';
       case NotificationType.adminBroadcast:
         return 'admin_broadcast';
       case NotificationType.systemNotification:
@@ -47,7 +49,8 @@ extension NotificationTypeExtension on NotificationType {
         this == NotificationType.taskAccepted ||
         this == NotificationType.taskStatusUpdated ||
         this == NotificationType.taskCompleted ||
-        this == NotificationType.taskRejected;
+        this == NotificationType.taskRejected ||
+        this == NotificationType.taskOpenBroadcast;
   }
 
   /// Check if this notification type is a broadcast
@@ -69,6 +72,8 @@ NotificationType parseNotificationType(String? type) {
       return NotificationType.taskCompleted;
     case 'task_rejected':
       return NotificationType.taskRejected;
+    case 'task_open_broadcast':
+      return NotificationType.taskOpenBroadcast;
     case 'admin_broadcast':
       return NotificationType.adminBroadcast;
     case 'system_notification':
@@ -124,6 +129,11 @@ class NotificationPayload {
     // Add type and notificationId
     data['type'] = typeStr;
     data['notificationId'] = notification.id;
+
+    // Also check for top-level taskId (NotificationModel has this field)
+    if (notification.taskId != null && data['taskId'] == null) {
+      data['taskId'] = notification.taskId;
+    }
 
     return NotificationPayload.fromMap(data);
   }

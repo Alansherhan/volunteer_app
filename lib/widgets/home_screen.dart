@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:volunteer_app/components/layout/header.dart';
 import 'package:volunteer_app/screens/Dashboard.dart';
 import 'package:volunteer_app/screens/map_screen.dart';
 import 'package:volunteer_app/screens/task_pool_screen.dart';
 import 'package:volunteer_app/screens/account_page.dart';
 import 'package:volunteer_app/screens/tasks.dart';
+import 'package:volunteer_app/screens/notifications/cubit/notification_cubit.dart';
+import 'package:volunteer_app/services/fcm_service.dart';
 import 'package:volunteer_app/theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   late PageController _pageController;
+  bool _fcmCallbacksSetup = false;
 
   @override
   void initState() {
@@ -30,6 +34,19 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  /// Set up FCM callbacks to refresh notifications when push arrives
+  void _setupFcmCallbacks(BuildContext context) {
+    if (_fcmCallbacksSetup) return;
+    _fcmCallbacksSetup = true;
+
+    FcmService().onNotificationReceived = () {
+      // Refresh notification cubit when push arrives
+      if (context.mounted) {
+        context.read<NotificationCubit>().silentRefresh();
+      }
+    };
+  }
+
   final List<Widget> _pages = [
     const Dashboard(),
     const TaskPoolScreen(),
@@ -40,84 +57,106 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: Container(
-        decoration: BoxDecoration(gradient: AppTheme.backgroundGradient),
-        child: Column(
-          children: [
-            const Header(),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (index) {
-                  setState(() => _currentIndex = index);
-                },
-                children: _pages,
+    return BlocProvider(
+      create: (context) => NotificationCubit()..loadNotifications(),
+      child: Builder(
+        builder: (builderContext) {
+          // Set up FCM callbacks after bloc provider is available
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _setupFcmCallbacks(builderContext);
+          });
+
+          return Scaffold(
+            extendBody: true,
+            body: Container(
+              decoration: BoxDecoration(gradient: AppTheme.backgroundGradient),
+              child: Column(
+                children: [
+                  const Header(),
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      onPageChanged: (index) {
+                        setState(() => _currentIndex = index);
+                      },
+                      children: _pages,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(25),
-          child: BottomNavigationBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: AppTheme.primaryColor,
-            unselectedItemColor: AppTheme.textMuted,
-            currentIndex: _currentIndex,
-            selectedLabelStyle: AppTheme.mainFont(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-            unselectedLabelStyle: AppTheme.mainFont(
-              fontSize: 11,
-              fontWeight: FontWeight.w400,
-            ),
-            onTap: (index) {
-              setState(() => _currentIndex = index);
-              _pageController.jumpToPage(index);
-            },
-            items: [
-              _buildNavItem(Icons.home_rounded, Icons.home_outlined, 'Home', 0),
-              _buildNavItem(
-                Icons.explore_rounded,
-                Icons.explore_outlined,
-                'Available',
-                1,
+            bottomNavigationBar: Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              _buildNavItem(Icons.map_rounded, Icons.map_outlined, 'Map', 2),
-              _buildNavItem(
-                Icons.assignment_rounded,
-                Icons.assignment_outlined,
-                'Tasks',
-                3,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(25),
+                child: BottomNavigationBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  type: BottomNavigationBarType.fixed,
+                  selectedItemColor: AppTheme.primaryColor,
+                  unselectedItemColor: AppTheme.textMuted,
+                  currentIndex: _currentIndex,
+                  selectedLabelStyle: AppTheme.mainFont(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  unselectedLabelStyle: AppTheme.mainFont(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  onTap: (index) {
+                    setState(() => _currentIndex = index);
+                    _pageController.jumpToPage(index);
+                  },
+                  items: [
+                    _buildNavItem(
+                      Icons.home_rounded,
+                      Icons.home_outlined,
+                      'Home',
+                      0,
+                    ),
+                    _buildNavItem(
+                      Icons.explore_rounded,
+                      Icons.explore_outlined,
+                      'Available',
+                      1,
+                    ),
+                    _buildNavItem(
+                      Icons.map_rounded,
+                      Icons.map_outlined,
+                      'Map',
+                      2,
+                    ),
+                    _buildNavItem(
+                      Icons.assignment_rounded,
+                      Icons.assignment_outlined,
+                      'Tasks',
+                      3,
+                    ),
+                    _buildNavItem(
+                      Icons.person_rounded,
+                      Icons.person_outline_rounded,
+                      'Account',
+                      4,
+                    ),
+                  ],
+                ),
               ),
-              _buildNavItem(
-                Icons.person_rounded,
-                Icons.person_outline_rounded,
-                'Account',
-                4,
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

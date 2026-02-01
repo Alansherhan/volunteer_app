@@ -123,6 +123,43 @@ class NotificationService {
     }
   }
 
+  /// Marks all notifications as read
+  static Future<bool> markAllAsRead() async {
+    try {
+      developer.log(
+        'Marking all notifications as read',
+        name: 'NotificationService',
+      );
+
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/notifications/read-all'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      developer.log(
+        'Mark all as read response: ${response.statusCode}',
+        name: 'NotificationService',
+      );
+      return response.statusCode == 200;
+    } catch (e, stackTrace) {
+      developer.log(
+        'ERROR marking all as read: $e',
+        name: 'NotificationService',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
   /// Gets the count of unread notifications
   static Future<int> getUnreadCount() async {
     try {

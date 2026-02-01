@@ -4,6 +4,7 @@ class NotificationModel {
   final String body;
   final String? recipientId;
   final String type;
+  final String targetUserType;
   final bool isRead;
   final DateTime createdAt;
   final Map<String, dynamic>? data;
@@ -15,6 +16,7 @@ class NotificationModel {
     required this.body,
     this.recipientId,
     required this.type,
+    this.targetUserType = 'volunteer',
     required this.isRead,
     required this.createdAt,
     this.data,
@@ -28,6 +30,7 @@ class NotificationModel {
       body: json['body'] ?? '',
       recipientId: json['recipientId'],
       type: json['type'] ?? 'admin_broadcast',
+      targetUserType: json['targetUserType'] ?? 'volunteer',
       isRead: json['isRead'] ?? false,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
@@ -46,6 +49,7 @@ class NotificationModel {
       'body': body,
       'recipientId': recipientId,
       'type': type,
+      'targetUserType': targetUserType,
       'isRead': isRead,
       'createdAt': createdAt.toIso8601String(),
       if (data != null) 'data': data,

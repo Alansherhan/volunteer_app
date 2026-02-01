@@ -1,35 +1,71 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:volunteer_app/models/notification_model.dart';
-import 'package:volunteer_app/models/notification_payload.dart';
-import 'package:volunteer_app/services/notification_router.dart';
-import 'package:volunteer_app/services/notification_service.dart';
+import 'package:volunteer_app/screens/notifications/cubit/notification_cubit.dart';
+import 'package:volunteer_app/screens/notifications/widgets/notification_detail_bottom_sheet.dart';
 import 'package:volunteer_app/theme/app_theme.dart';
 
-class NotificationScreen extends StatefulWidget {
+class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
 
   @override
-  State<NotificationScreen> createState() => _NotificationScreenState();
+  Widget build(BuildContext context) {
+    // Check if a NotificationCubit is already provided in the widget tree
+    try {
+      context.read<NotificationCubit>();
+      // Cubit exists, use it directly
+      return const _NotificationScreenContent();
+    } catch (_) {
+      // No cubit found, create a new one for standalone navigation (e.g., from FCM tap)
+      return BlocProvider(
+        create: (_) => NotificationCubit()..loadNotifications(),
+        child: const _NotificationScreenContent(),
+      );
+    }
+  }
 }
 
-class _NotificationScreenState extends State<NotificationScreen> {
-  late Future<List<NotificationModel>> _notificationsFuture;
+class _NotificationScreenContent extends StatefulWidget {
+  const _NotificationScreenContent();
+
+  @override
+  State<_NotificationScreenContent> createState() =>
+      _NotificationScreenContentState();
+}
+
+class _NotificationScreenContentState
+    extends State<_NotificationScreenContent> {
+  Timer? _refreshTimer;
+  // Store reference to cubit to safely access in dispose()
+  late final NotificationCubit _notificationCubit;
 
   @override
   void initState() {
     super.initState();
-    _loadNotifications();
+    // Save reference to cubit before any async operations
+    _notificationCubit = context.read<NotificationCubit>();
+
+    // Load notifications when screen opens
+    _notificationCubit.loadNotifications();
+
+    // Set up periodic refresh every 30 seconds while on this screen
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _notificationCubit.silentRefresh();
+    });
   }
 
-  void _loadNotifications() {
-    _notificationsFuture = NotificationService.getNotifications();
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    // Mark all notifications as read when leaving the screen
+    _notificationCubit.markAllAsRead();
+    super.dispose();
   }
 
   Future<void> _refreshNotifications() async {
-    setState(() {
-      _loadNotifications();
-    });
+    await _notificationCubit.refresh();
   }
 
   Future<void> _onNotificationTap(NotificationModel notification) async {
@@ -40,100 +76,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     // Mark as read first
     if (!notification.isRead) {
-      await NotificationService.markAsRead(notification.id);
-      _refreshNotifications();
+      await _notificationCubit.markAsRead(notification.id);
     }
 
-    // Navigate to detail screen based on notification type
-    final payload = _createPayloadFromNotification(notification);
-
-    // Use context-based navigation with source = notificationScreen
-    // This tells the router we're already on the notification screen
-    // and prevents stacking multiple notification screens
+    // Show bottom sheet with notification details
     if (mounted) {
-      final result = await NotificationRouter()
-          .handleNotificationTapWithContext(
-            context,
-            payload,
-            source: NavigationSource.notificationScreen,
-          );
-
-      developer.log(
-        'Notification tap result: $result',
-        name: 'NotificationScreen',
-      );
-
-      // Handle different results with appropriate feedback
-      if (result == NotificationTapResult.failed && mounted) {
-        developer.log(
-          'Showing snackbar for failed result',
-          name: 'NotificationScreen',
-        );
-        // Show error feedback when task/detail couldn't be loaded
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.info_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'This ${notification.type.startsWith('task_') ? 'task' : 'item'} is no longer available',
-                    style: AppTheme.mainFont(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppTheme.textSecondary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-      // noAction is expected for broadcast notifications - no feedback needed
+      await NotificationDetailBottomSheet.show(context, notification);
     }
-  }
-
-  NotificationPayload _createPayloadFromNotification(
-    NotificationModel notification,
-  ) {
-    // Build data map from notification
-    final Map<String, dynamic> data = {
-      'type': notification.type,
-      'notificationId': notification.id,
-    };
-
-    // Add task ID - check direct field first, then data map
-    if (notification.taskId != null) {
-      data['taskId'] = notification.taskId;
-      developer.log(
-        'TaskId from notification.taskId: ${notification.taskId}',
-        name: 'NotificationScreen',
-      );
-    } else if (notification.data != null &&
-        notification.data!['taskId'] != null) {
-      data['taskId'] = notification.data!['taskId'];
-      developer.log(
-        'TaskId from notification.data: ${notification.data!['taskId']}',
-        name: 'NotificationScreen',
-      );
-    } else {
-      developer.log(
-        'No taskId found in notification: ${notification.id}, type: ${notification.type}, data: ${notification.data}',
-        name: 'NotificationScreen',
-      );
-    }
-
-    developer.log(
-      'Created payload for notification ${notification.id}: $data',
-      name: 'NotificationScreen',
-    );
-
-    return NotificationPayload.fromMap(data);
   }
 
   @override
@@ -179,52 +128,55 @@ class _NotificationScreenState extends State<NotificationScreen> {
               ),
               // Content
               Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _refreshNotifications,
-                  color: AppTheme.primaryColor,
-                  child: FutureBuilder<List<NotificationModel>>(
-                    future: _notificationsFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircularProgressIndicator(
-                                color: AppTheme.primaryColor,
-                                strokeWidth: 3,
+                child: BlocBuilder<NotificationCubit, NotificationState>(
+                  builder: (context, state) {
+                    if (state is NotificationLoading) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              color: AppTheme.primaryColor,
+                              strokeWidth: 3,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Loading notifications...',
+                              style: AppTheme.mainFont(
+                                color: AppTheme.textSecondary,
                               ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Loading notifications...',
-                                style: AppTheme.mainFont(
-                                  color: AppTheme.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
+                            ),
+                          ],
+                        ),
+                      );
+                    }
 
-                      if (snapshot.hasError) {
-                        return _buildErrorState(snapshot.error.toString());
-                      }
+                    if (state is NotificationError) {
+                      return _buildErrorState(state.message);
+                    }
 
-                      final notifications = snapshot.data ?? [];
-
-                      if (notifications.isEmpty) {
+                    if (state is NotificationLoaded) {
+                      if (state.notifications.isEmpty) {
                         return _buildEmptyState();
                       }
 
-                      return ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: notifications.length,
-                        itemBuilder: (context, index) {
-                          return _buildNotificationCard(notifications[index]);
-                        },
+                      return RefreshIndicator(
+                        onRefresh: _refreshNotifications,
+                        color: AppTheme.primaryColor,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: state.notifications.length,
+                          itemBuilder: (context, index) {
+                            return _buildNotificationCard(
+                              state.notifications[index],
+                            );
+                          },
+                        ),
                       );
-                    },
-                  ),
+                    }
+
+                    return const SizedBox.shrink();
+                  },
                 ),
               ),
             ],
