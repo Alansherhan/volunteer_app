@@ -16,6 +16,17 @@ class TaskModel {
   final int remainingSlots;
   final List<String> assignedVolunteers;
 
+  // Pickup location (donor's location - where to pick up items)
+  final Map<String, dynamic>? pickupLocation;
+  final Map<String, dynamic>? pickupAddress;
+
+  // Delivery location (beneficiary's location - where to deliver items)
+  final Map<String, dynamic>? deliveryLocation;
+  final Map<String, dynamic>? deliveryAddress;
+
+  // Legacy location field (for backward compatibility)
+  final Map<String, dynamic>? taskLocation;
+
   TaskModel({
     required this.id,
     required this.taskName,
@@ -30,6 +41,11 @@ class TaskModel {
     this.currentVolunteerCount = 0,
     this.remainingSlots = 1,
     this.assignedVolunteers = const [],
+    this.pickupLocation,
+    this.pickupAddress,
+    this.deliveryLocation,
+    this.deliveryAddress,
+    this.taskLocation,
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -72,6 +88,22 @@ class TaskModel {
       remainingSlots:
           json['remainingSlots'] ?? (volunteersNeeded - currentCount),
       assignedVolunteers: volunteers,
+      // Parse pickup/delivery locations from task
+      pickupLocation: json['pickupLocation'] is Map<String, dynamic>
+          ? json['pickupLocation']
+          : null,
+      pickupAddress: json['pickupAddress'] is Map<String, dynamic>
+          ? json['pickupAddress']
+          : null,
+      deliveryLocation: json['deliveryLocation'] is Map<String, dynamic>
+          ? json['deliveryLocation']
+          : null,
+      deliveryAddress: json['deliveryAddress'] is Map<String, dynamic>
+          ? json['deliveryAddress']
+          : null,
+      taskLocation: json['location'] is Map<String, dynamic>
+          ? json['location']
+          : null,
     );
   }
 
@@ -90,6 +122,11 @@ class TaskModel {
       'currentVolunteerCount': currentVolunteerCount,
       'remainingSlots': remainingSlots,
       'assignedVolunteers': assignedVolunteers,
+      'pickupLocation': pickupLocation,
+      'pickupAddress': pickupAddress,
+      'deliveryLocation': deliveryLocation,
+      'deliveryAddress': deliveryAddress,
+      'location': taskLocation,
     };
   }
 
@@ -222,9 +259,164 @@ class TaskModel {
     return null;
   }
 
+  /// Helper to extract coordinates from a GeoJSON location object
+  Map<String, double>? _extractCoordinates(dynamic loc) {
+    if (loc == null) return null;
+    if (loc is Map<String, dynamic>) {
+      final coords = loc['coordinates'];
+      if (coords is List && coords.length >= 2) {
+        final lng = coords[0];
+        final lat = coords[1];
+        if (lng is num && lat is num) {
+          return {'latitude': lat.toDouble(), 'longitude': lng.toDouble()};
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Get pickup coordinates (donor's location - where to pick up items)
+  /// For donation tasks with pickup delivery method
+  Map<String, double>? get pickupCoordinates {
+    // First check task's direct pickupLocation field
+    if (pickupLocation != null) {
+      final coords = _extractCoordinates(pickupLocation);
+      if (coords != null) return coords;
+    }
+
+    // Fallback to legacy location field (for backward compatibility)
+    if (taskLocation != null) {
+      final coords = _extractCoordinates(taskLocation);
+      if (coords != null) return coords;
+    }
+
+    return null;
+  }
+
+  /// Get delivery coordinates (beneficiary's location - where to deliver items)
+  /// For donation tasks, this is the donation request's location
+  Map<String, double>? get deliveryCoordinates {
+    // First check task's direct deliveryLocation field
+    if (deliveryLocation != null) {
+      final coords = _extractCoordinates(deliveryLocation);
+      if (coords != null) return coords;
+    }
+
+    // Fallback to donationRequest location
+    if (donationRequest != null) {
+      dynamic loc = donationRequest!['location'];
+      if (loc == null && donationRequest!['address'] is Map) {
+        loc = (donationRequest!['address'] as Map)['location'];
+      }
+      final coords = _extractCoordinates(loc);
+      if (coords != null) return coords;
+    }
+
+    return null;
+  }
+
+  /// Get pickup address as formatted string
+  String? get pickupAddressString {
+    if (pickupAddress != null) {
+      final parts = <String>[];
+      if (pickupAddress!['addressLine1'] != null &&
+          pickupAddress!['addressLine1'].toString().trim().isNotEmpty) {
+        parts.add(pickupAddress!['addressLine1'].toString());
+      }
+      if (pickupAddress!['addressLine2'] != null &&
+          pickupAddress!['addressLine2'].toString().trim().isNotEmpty) {
+        parts.add(pickupAddress!['addressLine2'].toString());
+      }
+      if (pickupAddress!['addressLine3'] != null &&
+          pickupAddress!['addressLine3'].toString().trim().isNotEmpty) {
+        parts.add(pickupAddress!['addressLine3'].toString());
+      }
+      if (pickupAddress!['pinCode'] != null &&
+          pickupAddress!['pinCode'].toString().trim().isNotEmpty) {
+        parts.add('- ${pickupAddress!['pinCode']}');
+      }
+      if (parts.isNotEmpty) {
+        return parts.join(', ');
+      }
+    }
+    return null;
+  }
+
+  /// Get delivery address as formatted string
+  String? get deliveryAddressString {
+    // First check task's direct deliveryAddress field
+    if (deliveryAddress != null) {
+      final parts = <String>[];
+      if (deliveryAddress!['addressLine1'] != null &&
+          deliveryAddress!['addressLine1'].toString().trim().isNotEmpty) {
+        parts.add(deliveryAddress!['addressLine1'].toString());
+      }
+      if (deliveryAddress!['addressLine2'] != null &&
+          deliveryAddress!['addressLine2'].toString().trim().isNotEmpty) {
+        parts.add(deliveryAddress!['addressLine2'].toString());
+      }
+      if (deliveryAddress!['addressLine3'] != null &&
+          deliveryAddress!['addressLine3'].toString().trim().isNotEmpty) {
+        parts.add(deliveryAddress!['addressLine3'].toString());
+      }
+      if (deliveryAddress!['pinCode'] != null &&
+          deliveryAddress!['pinCode'].toString().trim().isNotEmpty) {
+        parts.add('- ${deliveryAddress!['pinCode']}');
+      }
+      if (parts.isNotEmpty) {
+        return parts.join(', ');
+      }
+    }
+
+    // Fallback to donation request address
+    if (donationRequest != null) {
+      final address = donationRequest!['address'];
+      if (address is Map<String, dynamic>) {
+        final parts = <String>[];
+        if (address['addressLine1'] != null &&
+            address['addressLine1'].toString().trim().isNotEmpty) {
+          parts.add(address['addressLine1'].toString());
+        }
+        if (address['addressLine2'] != null &&
+            address['addressLine2'].toString().trim().isNotEmpty) {
+          parts.add(address['addressLine2'].toString());
+        }
+        if (address['addressLine3'] != null &&
+            address['addressLine3'].toString().trim().isNotEmpty) {
+          parts.add(address['addressLine3'].toString());
+        }
+        if (address['pinCode'] != null &&
+            address['pinCode'].toString().trim().isNotEmpty) {
+          parts.add('- ${address['pinCode']}');
+        }
+        if (parts.isNotEmpty) {
+          return parts.join(', ');
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Check if this is a pickup task (donation with pickup delivery)
+  bool get isPickupTask => taskType == 'donation' && pickupLocation != null;
+
   /// Get coordinates from aid or donation request location (GeoJSON format)
   /// Returns a map with 'latitude' and 'longitude' keys, or null if not available
+  /// For donation pickup tasks, this returns the pickup location (donor's location)
+  /// For aid tasks, this returns the aid request location
   Map<String, double>? get coordinates {
+    // For donation tasks, prefer pickup coordinates
+    if (taskType == 'donation') {
+      final pickup = pickupCoordinates;
+      if (pickup != null) return pickup;
+    }
+
+    // Check task's direct location field
+    if (taskLocation != null) {
+      final coords = _extractCoordinates(taskLocation);
+      if (coords != null) return coords;
+    }
+
     dynamic loc;
 
     // Check aidRequest first
@@ -244,21 +436,7 @@ class TaskModel {
       }
     }
 
-    if (loc == null) return null;
-
-    // Handle GeoJSON format: { type: "Point", coordinates: [lng, lat] }
-    if (loc is Map<String, dynamic>) {
-      final coords = loc['coordinates'];
-      if (coords is List && coords.length >= 2) {
-        final lng = coords[0];
-        final lat = coords[1];
-        if (lng is num && lat is num) {
-          return {'latitude': lat.toDouble(), 'longitude': lng.toDouble()};
-        }
-      }
-    }
-
-    return null;
+    return _extractCoordinates(loc);
   }
 
   /// Check if task has open slots for more volunteers
