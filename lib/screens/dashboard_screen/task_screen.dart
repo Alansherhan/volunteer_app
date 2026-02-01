@@ -467,9 +467,53 @@ class _TaskScreenState extends State<TaskScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Location with Map Button
-            if (task.location != null) _buildLocationCard(task.location!),
-            if (task.location != null) const SizedBox(height: 12),
+            // For donation tasks: show both pickup and delivery locations
+            if (task.taskType == 'donation') ...[
+              // Pickup Location (donor's location - where to pick up items)
+              if (task.pickupAddressString != null ||
+                  task.pickupCoordinates != null)
+                _buildLocationCardWithCoords(
+                  title: 'Pickup Location',
+                  subtitle: 'Pick up items from here',
+                  address: task.pickupAddressString ?? 'Location available',
+                  coordinates: task.pickupCoordinates,
+                  iconColor: Colors.orange,
+                ),
+              if (task.pickupAddressString != null ||
+                  task.pickupCoordinates != null)
+                const SizedBox(height: 12),
+
+              // Delivery Location (beneficiary's location - where to deliver)
+              if (task.deliveryAddressString != null ||
+                  task.deliveryCoordinates != null)
+                _buildLocationCardWithCoords(
+                  title: 'Delivery Location',
+                  subtitle: 'Deliver items here',
+                  address: task.deliveryAddressString ?? 'Location available',
+                  coordinates: task.deliveryCoordinates,
+                  iconColor: Colors.green,
+                ),
+              if (task.deliveryAddressString != null ||
+                  task.deliveryCoordinates != null)
+                const SizedBox(height: 12),
+            ],
+
+            // For aid tasks or fallback: show single location
+            if (task.taskType == 'aid' && task.location != null) ...[
+              _buildLocationCard(task.location!),
+              const SizedBox(height: 12),
+            ],
+
+            // Fallback for donation tasks without specific pickup/delivery
+            if (task.taskType == 'donation' &&
+                task.pickupAddressString == null &&
+                task.pickupCoordinates == null &&
+                task.deliveryAddressString == null &&
+                task.deliveryCoordinates == null &&
+                task.location != null) ...[
+              _buildLocationCard(task.location!),
+              const SizedBox(height: 12),
+            ],
 
             // Created At
             if (task.createdAt != null)
@@ -683,6 +727,138 @@ class _TaskScreenState extends State<TaskScreen> {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build a location card with specific coordinates for navigation
+  /// Used for showing separate pickup and delivery locations
+  Widget _buildLocationCardWithCoords({
+    required String title,
+    required String subtitle,
+    required String address,
+    required Map<String, double>? coordinates,
+    required Color iconColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.location_on_rounded,
+                  color: iconColor,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTheme.mainFont(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: iconColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      address,
+                      style: AppTheme.mainFont(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: AppTheme.mainFont(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                if (coordinates != null) {
+                  final lat = coordinates['latitude'];
+                  final lng = coordinates['longitude'];
+                  // Google Maps URL for navigation
+                  final googleMapsUrl = Uri.parse(
+                    'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+                  );
+                  if (await canLaunchUrl(googleMapsUrl)) {
+                    await launchUrl(
+                      googleMapsUrl,
+                      mode: LaunchMode.externalApplication,
+                    );
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Could not open Google Maps'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'No coordinates available for this location',
+                      ),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.navigation_rounded, size: 18),
+              label: Text(
+                'Navigate to $title',
+                style: AppTheme.mainFont(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: iconColor,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 12),

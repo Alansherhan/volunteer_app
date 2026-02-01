@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:volunteer_app/models/task_model.dart';
-import 'package:volunteer_app/screens/dashboard_screen/task_screen.dart'; // Reuse logic if possible, but this is a preview
 import 'package:volunteer_app/theme/app_theme.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class TaskDetailsPreviewScreen extends StatelessWidget {
   final TaskModel task;
@@ -133,33 +131,50 @@ class TaskDetailsPreviewScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // Location
-                  if (task.location != null)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: AppTheme.softShadow,
+                  // For donation tasks: show both pickup and delivery locations
+                  if (task.taskType == 'donation') ...[
+                    // Pickup Location
+                    if (task.pickupAddressString != null) ...[
+                      _buildLocationRow(
+                        title: 'Pickup Location',
+                        address: task.pickupAddressString!,
+                        iconColor: Colors.orange,
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_rounded,
-                            color: AppTheme.primaryColor,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              task.location!,
-                              style: AppTheme.mainFont(fontSize: 15),
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 12),
+                    ],
+                    // Delivery Location
+                    if (task.deliveryAddressString != null) ...[
+                      _buildLocationRow(
+                        title: 'Delivery Location',
+                        address: task.deliveryAddressString!,
+                        iconColor: Colors.green,
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                    ],
+                    // Fallback to single location
+                    if (task.pickupAddressString == null &&
+                        task.deliveryAddressString == null &&
+                        task.location != null) ...[
+                      _buildLocationRow(
+                        title: 'Location',
+                        address: task.location!,
+                        iconColor: AppTheme.primaryColor,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ],
 
-                  const SizedBox(height: 24),
+                  // For aid tasks: show single location
+                  if (task.taskType == 'aid' && task.location != null) ...[
+                    _buildLocationRow(
+                      title: 'Location',
+                      address: task.location!,
+                      iconColor: AppTheme.primaryColor,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  const SizedBox(height: 12),
                   Text(
                     'Description',
                     style: AppTheme.mainFont(
@@ -216,6 +231,60 @@ class TaskDetailsPreviewScreen extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build a location row widget for the preview
+  Widget _buildLocationRow({
+    required String title,
+    required String address,
+    required Color iconColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(Icons.location_on_rounded, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTheme.mainFont(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: iconColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  address,
+                  style: AppTheme.mainFont(
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
         ],
