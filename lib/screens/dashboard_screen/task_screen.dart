@@ -65,6 +65,107 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 
+  Future<void> _acceptTask() async {
+    setState(() => _isLoading = true);
+
+    final success = await TaskService.updateTaskStatus(
+      widget.task.id,
+      'accepted',
+    );
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Task accepted successfully!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pop(context, true); // Return to refresh task list
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to accept task. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _rejectTask() async {
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Reject Task?',
+          style: AppTheme.mainFont(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to reject this task? This action cannot be undone.',
+          style: AppTheme.mainFont(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: AppTheme.mainFont(color: AppTheme.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(
+              'Reject',
+              style: AppTheme.mainFont(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+
+    final success = await TaskService.updateTaskStatus(
+      widget.task.id,
+      'rejected',
+    );
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Task rejected successfully.'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pop(context, true); // Return to refresh task list
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to reject task. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _completeWithProof() async {
     if (_selectedProofImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -561,6 +662,22 @@ class _TaskScreenState extends State<TaskScreen> {
             const SizedBox(height: 32),
 
             // Action Buttons
+            if (task.status == 'assigned') ...[
+              _buildActionButton(
+                label: 'Accept Task',
+                icon: Icons.check_circle_outline_rounded,
+                color: AppTheme.primaryColor,
+                onPressed: _acceptTask,
+              ),
+              const SizedBox(height: 12),
+              _buildActionButton(
+                label: 'Reject Task',
+                icon: Icons.cancel_outlined,
+                color: Colors.red,
+                onPressed: _rejectTask,
+                isOutlined: true,
+              ),
+            ],
             if (task.status == 'accepted') ...[
               _buildActionButton(
                 label: 'Mark as Complete',
