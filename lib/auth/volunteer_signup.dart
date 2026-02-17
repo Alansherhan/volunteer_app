@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:glassmorphism/glassmorphism.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:volunteer_app/auth/volunteer_login.dart';
+import 'package:volunteer_app/auth/widgets/auth_text_field.dart';
+import 'package:volunteer_app/auth/widgets/auth_button.dart';
 import 'package:volunteer_app/env.dart';
+import 'package:volunteer_app/theme/app_theme.dart';
 import 'package:volunteer_app/widgets/home_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -26,248 +28,244 @@ class _SignupScreenState extends State<SignupScreen> {
   String phoneNo = '';
   String address = '';
   String role = 'volunteer';
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 250, 246, 246),
-        ),
+      backgroundColor: AppTheme.backgroundColor,
+      body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              padding: const EdgeInsets.all(24.0),
               child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          Image.asset(
-                            'assets/images/logo5.png',
-                            width: 100,
-                            height: 100,
-                          ),
-                          Text(
-                            'Create Account',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Making a diffrence,Together',
-                            style: TextStyle(fontSize: 15, color: Colors.grey),
-                          ),
-                          SizedBox(height: 24),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Full Name', style: TextStyle(fontSize: 16)),
-                              SizedBox(height: 2),
-                              EditField(
-                                prefixIcon: Icons.person,
-                                hintText: 'Enter your full name',
-                                onChanged: (value) {
-                                  setState(() {
-                                    name = value;
-                                  });
-                                },
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Name is required';
-                                  }
-                                  if (value.length < 3) {
-                                    return 'Name must be at least 3 characters';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              SizedBox(height: 12),
-                              Text('Email', style: TextStyle(fontSize: 16)),
-                              SizedBox(height: 2),
-                              EditField(
-                                prefixIcon: Icons.email_outlined,
-                                hintText: 'your.email@example.com',
-                                keyboardType: TextInputType.emailAddress,
-                                onChanged: (value) {
-                                  setState(() {
-                                    email = value;
-                                  });
-                                },
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Email is required';
-                                  }
-                                  final emailRegex = RegExp(
-                                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                  );
-                                  if (!emailRegex.hasMatch(value)) {
-                                    return 'Enter a valid email';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              SizedBox(height: 12),
-                              Text('Password', style: TextStyle(fontSize: 16)),
-                              SizedBox(height: 2),
-                              PasswordField(
-                                prefixIcon: Icons.lock,
-                                hintText: "Enter password",
-                                onChanged: (value) {
-                                  setState(() {
-                                    password = value;
-                                  });
-                                },
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Password is required';
-                                  }
-                                  if (value.length < 6) {
-                                    return 'Password must be at least 6 characters';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              SizedBox(height: 12),
-                              Text(
-                                'Confirm Password',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                              SizedBox(height: 2),
-                              PasswordField(
-                                prefixIcon: Icons.lock,
-                                hintText: "Re-enter password",
-                                onChanged: (value) {
-                                  setState(() {
-                                    confirmPassword = value;
-                                  });
-                                },
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please confirm your password';
-                                  }
-                                  if (value != password) {
-                                    return 'Passwords do not match';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              SizedBox(height: 12),
-                              Text(
-                                'Phone Number',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                              SizedBox(height: 2),
-                              EditField(
-                                prefixIcon: Icons.phone,
-                                keyboardType: TextInputType.phone,
-                                hintText: "+91 1234567890",
-                                onChanged: (value) {
-                                  setState(() {
-                                    phoneNo = value;
-                                  });
-                                },
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Phone number is required';
-                                  }
-                                  final phoneRegex = RegExp(
-                                    r'^\+?[0-9]{10,15}$',
-                                  );
-                                  if (!phoneRegex.hasMatch(
-                                    value.replaceAll(' ', ''),
-                                  )) {
-                                    return 'Enter a valid phone number';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              SizedBox(height: 12),
-                              Text('Address', style: TextStyle(fontSize: 16)),
-                              SizedBox(height: 2),
-                              EditField(
-                                prefixIcon: Icons.location_on_outlined,
-                                maxLines: 2,
-                                hintText: "Address",
-                                onChanged: (value) {
-                                  setState(() {
-                                    address = value;
-                                  });
-                                },
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Address is required';
-                                  }
-                                  if (value.length < 5) {
-                                    return 'Please enter a complete address';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 24),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color.fromARGB(
-                                  255,
-                                  116,
-                                  188,
-                                  247,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                              ),
-                              onPressed: () {
-                                if (_formKey.currentState!.validate()) {
-                                  _onSignUpPressed(
-                                    name,
-                                    email,
-                                    password,
-                                    phoneNo,
-                                    address,
-                                  );
-                                }
-                              },
-                              child: Text(
-                                'SIGN UP',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                    // Logo
+                    Container(
+                      height: 100,
+                      width: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.primaryColor.withOpacity(0.15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.2),
+                            blurRadius: 30,
+                            spreadRadius: 5,
                           ),
                         ],
                       ),
+                      padding: const EdgeInsets.all(20),
+                      child: Image.asset(
+                        'assets/images/logo5.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(32.0),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Create Account',
+                      style: AppTheme.mainFont(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Making a difference, Together',
+                      style: AppTheme.mainFont(
+                        fontSize: 15,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Form Container
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
                       child: Column(
                         children: [
-                          Text("Already have an account?"),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (context) => const LoginScreen(),
-                                ),
-                              );
+                          AuthTextField(
+                            label: 'Full Name',
+                            hint: 'Enter your full name',
+                            prefixIcon: Icons.person_outline,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (value) => setState(() => name = value),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Name is required';
+                              }
+                              if (value.length < 3) {
+                                return 'Name must be at least 3 characters';
+                              }
+                              return null;
                             },
-                            child: Text("Log In"),
+                          ),
+                          const SizedBox(height: 10),
+                          AuthTextField(
+                            label: 'Email Address',
+                            hint: 'Enter your email',
+                            prefixIcon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (value) => setState(() => email = value),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Email is required';
+                              }
+                              final emailRegex = RegExp(
+                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                              );
+                              if (!emailRegex.hasMatch(value)) {
+                                return 'Enter a valid email';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          AuthTextField(
+                            label: 'Password',
+                            hint: 'Enter password',
+                            prefixIcon: Icons.lock_outline,
+                            isPassword: true,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (value) =>
+                                setState(() => password = value),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Password is required';
+                              }
+                              if (value.length < 6) {
+                                return 'Password must be at least 6 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          AuthTextField(
+                            label: 'Confirm Password',
+                            hint: 'Re-enter password',
+                            prefixIcon: Icons.lock_outline,
+                            isPassword: true,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (value) =>
+                                setState(() => confirmPassword = value),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please confirm your password';
+                              }
+                              if (value != password) {
+                                return 'Passwords do not match';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          AuthTextField(
+                            label: 'Phone Number',
+                            hint: '+91 1234567890',
+                            prefixIcon: Icons.phone_outlined,
+                            keyboardType: TextInputType.phone,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (value) =>
+                                setState(() => phoneNo = value),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Phone number is required';
+                              }
+                              final phoneRegex = RegExp(r'^\+?[0-9]{10,15}$');
+                              if (!phoneRegex.hasMatch(
+                                value.replaceAll(' ', ''),
+                              )) {
+                                return 'Enter a valid phone number';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          AuthTextField(
+                            label: 'Address',
+                            hint: 'Enter your full address',
+                            prefixIcon: Icons.location_on_outlined,
+                            keyboardType: TextInputType.streetAddress,
+                            textInputAction: TextInputAction.done,
+                            onChanged: (value) =>
+                                setState(() => address = value),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Address is required';
+                              }
+                              if (value.length < 5) {
+                                return 'Please enter a complete address';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          AuthButton(
+                            text: 'SIGN UP',
+                            isLoading: _isLoading,
+                            onPressed: () {
+                              if (_formKey.currentState!.validate()) {
+                                _onSignUpPressed(
+                                  name,
+                                  email,
+                                  password,
+                                  phoneNo,
+                                  address,
+                                );
+                              }
+                            },
                           ),
                         ],
                       ),
                     ),
+
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Already have an account? ",
+                          style: AppTheme.mainFont(
+                            color: AppTheme.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (context) => const LoginScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            "Log In",
+                            style: AppTheme.mainFont(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -285,12 +283,14 @@ class _SignupScreenState extends State<SignupScreen> {
     String phoneNumber,
     String address,
   ) async {
+    setState(() {
+      _isLoading = true;
+    });
+
     const loginRoute = '$kBaseUrl/public/signup';
 
-    // Add this debug log to see the actual URL
     log('Attempting to connect to: $loginRoute');
 
-    // Trim any whitespace (temporary fix)
     final cleanUrl = loginRoute.trim();
 
     var body = jsonEncode({
@@ -304,7 +304,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse(cleanUrl), // Use cleaned URL
+        Uri.parse(cleanUrl),
         headers: {"Accept": "*/*", "Content-Type": "application/json"},
         body: body,
       );
@@ -322,11 +322,13 @@ class _SignupScreenState extends State<SignupScreen> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(kTokenStorageKey, token);
 
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
-          (r) => false,
-        );
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
+            (r) => false,
+          );
+        }
       } else {
         log(response.body);
         final error = jsonDecode(response.body);
@@ -335,105 +337,25 @@ class _SignupScreenState extends State<SignupScreen> {
     } catch (e, s) {
       log(e.toString(), stackTrace: s);
       _showError("Something went wrong: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-}
-
-class PasswordField extends StatefulWidget {
-  const PasswordField({
-    super.key,
-    this.onChanged,
-    this.hintText,
-    this.prefixIcon,
-    this.validator,
-  });
-
-  final void Function(String)? onChanged;
-  final String? hintText;
-  final IconData? prefixIcon;
-  final String? Function(String?)? validator;
-
-  @override
-  State<PasswordField> createState() => _PasswordFieldState();
-}
-
-class _PasswordFieldState extends State<PasswordField> {
-  bool isObscure = true;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      obscureText: isObscure,
-      decoration: InputDecoration(
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        suffixIcon: IconButton(
-          onPressed: () {
-            setState(() {
-              isObscure = !isObscure;
-            });
-          },
-          icon: Icon(isObscure ? Icons.visibility_off : Icons.remove_red_eye),
-        ),
-        hintText: widget.hintText,
-        hintStyle: TextStyle(color: Colors.grey.withAlpha(190)),
-        filled: true,
-        fillColor: Colors.white,
-        prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon) : null,
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: AppTheme.mainFont(color: Colors.white)),
+        backgroundColor: AppTheme.errorColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
       ),
-      onChanged: widget.onChanged,
-      validator: widget.validator,
-    );
-  }
-}
-
-class EditField extends StatefulWidget {
-  const EditField({
-    super.key,
-    this.onChanged,
-    this.hintText,
-    this.keyboardType,
-    this.prefixIcon,
-    this.maxLines,
-    this.validator,
-  });
-
-  final void Function(String)? onChanged;
-  final String? hintText;
-  final TextInputType? keyboardType;
-  final IconData? prefixIcon;
-  final int? maxLines;
-  final String? Function(String?)? validator;
-
-  @override
-  State<EditField> createState() => _EditFieldState();
-}
-
-class _EditFieldState extends State<EditField> {
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      maxLines: widget.maxLines,
-      keyboardType: widget.keyboardType,
-      decoration: InputDecoration(
-        prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon) : null,
-        hintText: widget.hintText,
-        hintStyle: TextStyle(color: Colors.grey.withAlpha(190)),
-        border: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.blue),
-          gapPadding: BorderSide.strokeAlignCenter,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-      ),
-      onChanged: widget.onChanged,
-      validator: widget.validator,
     );
   }
 }
