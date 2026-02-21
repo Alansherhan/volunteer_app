@@ -993,8 +993,8 @@ class _Map_ScreenState extends State<Map_Screen> {
 
                 // Relief Centers Toggle Button
                 Positioned(
-                  right: 16,
-                  bottom: 250,
+                  left: 16,
+                  bottom: 100,
                   child: Container(
                     decoration: BoxDecoration(
                       color: _showReliefCenters
