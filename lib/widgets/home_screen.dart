@@ -21,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   late PageController _pageController;
   bool _fcmCallbacksSetup = false;
+  final GlobalKey<DashboardState> _dashboardKey = GlobalKey<DashboardState>();
 
   @override
   void initState() {
@@ -47,9 +48,15 @@ class _HomeScreenState extends State<HomeScreen> {
     };
   }
 
-  final List<Widget> _pages = [
-    const Dashboard(),
-    const TaskPoolScreen(),
+  void _goToDashboard() {
+    setState(() => _currentIndex = 0);
+    _pageController.jumpToPage(0);
+    _dashboardKey.currentState?.fetchTasks();
+  }
+
+  late final List<Widget> _pages = [
+    Dashboard(key: _dashboardKey),
+    TaskPoolScreen(onTaskClaimed: _goToDashboard),
     const Map_Screen(),
     const TasksScreen(),
     const Account(),

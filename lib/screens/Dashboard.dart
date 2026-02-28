@@ -11,10 +11,10 @@ class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
 
   @override
-  State<Dashboard> createState() => _DashboardState();
+  State<Dashboard> createState() => DashboardState();
 }
 
-class _DashboardState extends State<Dashboard> {
+class DashboardState extends State<Dashboard> {
   List<TaskModel> _tasks = [];
   bool _isLoading = true;
   int _assignedCount = 0;
@@ -27,10 +27,10 @@ class _DashboardState extends State<Dashboard> {
   @override
   void initState() {
     super.initState();
-    _fetchTasks();
+    fetchTasks();
   }
 
-  Future<void> _fetchTasks() async {
+  Future<void> fetchTasks() async {
     setState(() => _isLoading = true);
     try {
       final tasks = await TaskService.getMyTasks();
@@ -72,7 +72,7 @@ class _DashboardState extends State<Dashboard> {
     final success = await TaskService.updateTaskStatus(task.id, 'accepted');
 
     if (success) {
-      await _fetchTasks();
+      await fetchTasks();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -152,7 +152,7 @@ class _DashboardState extends State<Dashboard> {
       setState(() => _loadingTaskId = null);
 
       if (success) {
-        await _fetchTasks();
+        await fetchTasks();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Task completed successfully!'),
@@ -401,7 +401,7 @@ class _DashboardState extends State<Dashboard> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: RefreshIndicator(
-        onRefresh: _fetchTasks,
+        onRefresh: fetchTasks,
         color: AppTheme.primaryColor,
         child: CustomScrollView(
           slivers: [
@@ -523,7 +523,7 @@ class _DashboardState extends State<Dashboard> {
                                   ),
                                 );
                             if (result == true) {
-                              _fetchTasks(); // Refresh if task was updated
+                              fetchTasks(); // Refresh if task was updated
                             }
                           },
                           onStartTask: () => _handleStartTask(task),

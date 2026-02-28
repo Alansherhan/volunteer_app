@@ -5,7 +5,9 @@ import 'package:volunteer_app/theme/app_theme.dart';
 import 'package:volunteer_app/screens/task_details_preview_screen.dart';
 
 class TaskPoolScreen extends StatefulWidget {
-  const TaskPoolScreen({super.key});
+  final VoidCallback? onTaskClaimed;
+
+  const TaskPoolScreen({super.key, this.onTaskClaimed});
 
   @override
   State<TaskPoolScreen> createState() => _TaskPoolScreenState();
@@ -113,7 +115,8 @@ class _TaskPoolScreenState extends State<TaskPoolScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        // Refresh the list
+        // Navigate to dashboard and refresh
+        widget.onTaskClaimed?.call();
         _fetchOpenTasks();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
