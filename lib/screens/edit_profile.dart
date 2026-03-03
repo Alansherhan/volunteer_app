@@ -556,7 +556,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     // 3. Default Icon (if no image exists)
     return const Icon(
       Icons.account_circle_rounded,
-      size: 120,
+      size: 100,
       color: Colors.grey, // Optional: makes it look better
     );
   }
