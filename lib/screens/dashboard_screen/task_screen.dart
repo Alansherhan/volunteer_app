@@ -1485,123 +1485,123 @@ class _TaskScreenState extends State<TaskScreen> {
           ],
 
           // Proof Images
-          if (proofImages.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Proof Images',
-              style: AppTheme.mainFont(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 120,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: proofImages.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: EdgeInsets.only(
-                      right: index < proofImages.length - 1 ? 8 : 0,
-                    ),
-                    child: GestureDetector(
-                      onTap: () =>
-                          _showFullScreenImage(proofImages[index].toString()),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          proofImages[index].toString(),
-                          width: 120,
-                          height: 120,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                width: 120,
-                                height: 120,
-                                color: AppTheme.primaryColor.withOpacity(0.1),
-                                child: const Icon(Icons.broken_image_outlined),
-                              ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ] else if (fallbackImageUrl != null &&
-              fallbackImageUrl.isNotEmpty) ...[
-            // Fallback to task image if no proof images
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: () => _showFullScreenImage(fallbackImageUrl),
-              child: Container(
-                width: double.infinity,
-                height: 180,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.primaryColor.withOpacity(0.2),
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(
-                        _getFullImageUrl(fallbackImageUrl),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppTheme.primaryColor.withOpacity(0.1),
-                          child: Center(
-                            child: Icon(
-                              Icons.broken_image_outlined,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black54,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.fullscreen,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                'Tap to enlarge',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+          // if (proofImages.isNotEmpty) ...[
+          //   const SizedBox(height: 16),
+          //   Text(
+          //     'Proof Images',
+          //     style: AppTheme.mainFont(
+          //       fontSize: 12,
+          //       fontWeight: FontWeight.w600,
+          //       color: AppTheme.textSecondary,
+          //     ),
+          //   ),
+          //   const SizedBox(height: 8),
+          //   SizedBox(
+          //     height: 120,
+          //     child: ListView.builder(
+          //       scrollDirection: Axis.horizontal,
+          //       itemCount: proofImages.length,
+          //       itemBuilder: (context, index) {
+          //         return Padding(
+          //           padding: EdgeInsets.only(
+          //             right: index < proofImages.length - 1 ? 8 : 0,
+          //           ),
+          //           child: GestureDetector(
+          //             onTap: () =>
+          //                 _showFullScreenImage(proofImages[index].toString()),
+          //             child: ClipRRect(
+          //               borderRadius: BorderRadius.circular(12),
+          //               child: Image.network(
+          //                 proofImages[index].toString(),
+          //                 width: 120,
+          //                 height: 120,
+          //                 fit: BoxFit.cover,
+          //                 errorBuilder: (context, error, stackTrace) =>
+          //                     Container(
+          //                       width: 120,
+          //                       height: 120,
+          //                       color: AppTheme.primaryColor.withOpacity(0.1),
+          //                       child: const Icon(Icons.broken_image_outlined),
+          //                     ),
+          //               ),
+          //             ),
+          //           ),
+          //         );
+          //       },
+          //     ),
+          //   ),
+          // ] else if (fallbackImageUrl != null &&
+          //     fallbackImageUrl.isNotEmpty) ...[
+          //   // Fallback to task image if no proof images
+          //   const SizedBox(height: 16),
+          //   GestureDetector(
+          //     onTap: () => _showFullScreenImage(fallbackImageUrl),
+          //     child: Container(
+          //       width: double.infinity,
+          //       height: 180,
+          //       decoration: BoxDecoration(
+          //         borderRadius: BorderRadius.circular(12),
+          //         border: Border.all(
+          //           color: AppTheme.primaryColor.withOpacity(0.2),
+          //         ),
+          //       ),
+          //       child: ClipRRect(
+          //         borderRadius: BorderRadius.circular(12),
+          //         child: Stack(
+          //           fit: StackFit.expand,
+          //           children: [
+          //             Image.network(
+          //               _getFullImageUrl(fallbackImageUrl),
+          //               fit: BoxFit.cover,
+          //               errorBuilder: (context, error, stackTrace) => Container(
+          //                 color: AppTheme.primaryColor.withOpacity(0.1),
+          //                 child: Center(
+          //                   child: Icon(
+          //                     Icons.broken_image_outlined,
+          //                     color: AppTheme.textSecondary,
+          //                   ),
+          //                 ),
+          //               ),
+          //             ),
+          //             Positioned(
+          //               bottom: 8,
+          //               right: 8,
+          //               child: Container(
+          //                 padding: const EdgeInsets.symmetric(
+          //                   horizontal: 8,
+          //                   vertical: 4,
+          //                 ),
+          //                 decoration: BoxDecoration(
+          //                   color: Colors.black54,
+          //                   borderRadius: BorderRadius.circular(6),
+          //                 ),
+          //                 child: const Row(
+          //                   mainAxisSize: MainAxisSize.min,
+          //                   children: [
+          //                     Icon(
+          //                       Icons.fullscreen,
+          //                       color: Colors.white,
+          //                       size: 14,
+          //                     ),
+          //                     SizedBox(width: 4),
+          //                     Text(
+          //                       'Tap to enlarge',
+          //                       style: TextStyle(
+          //                         color: Colors.white,
+          //                         fontSize: 10,
+          //                         fontWeight: FontWeight.bold,
+          //                       ),
+          //                     ),
+          //                   ],
+          //                 ),
+          //               ),
+          //             ),
+          //           ],
+          //         ),
+          //       ),
+          //     ),
+          //   ),
+          // ],
         ],
       ),
     );

@@ -51,6 +51,11 @@ class NotificationService {
         name: 'NotificationService',
       );
 
+      if (response.statusCode == 401) {
+        developer.log('ERROR: Unauthorized (401)', name: 'NotificationService');
+        throw Exception('Unauthorized');
+      }
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['data'] != null) {

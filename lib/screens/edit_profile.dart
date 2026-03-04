@@ -756,7 +756,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   TextButton(
                     onPressed: _isLoading ? null : _saveProfile,
                     child: Text(
-                      'Save',
+                      '    ',
                       style: AppTheme.mainFont(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

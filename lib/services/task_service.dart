@@ -51,6 +51,11 @@ class TaskService {
         name: 'TaskService',
       );
 
+      if (response.statusCode == 401) {
+        developer.log('ERROR: Unauthorized (401)', name: 'TaskService');
+        throw Exception('Unauthorized');
+      }
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['data'] != null) {
@@ -128,6 +133,11 @@ class TaskService {
         name: 'TaskService',
       );
 
+      if (response.statusCode == 401) {
+        developer.log('ERROR: Unauthorized (401)', name: 'TaskService');
+        throw Exception('Unauthorized');
+      }
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['success'] == true;
@@ -190,6 +200,11 @@ class TaskService {
         name: 'TaskService',
       );
 
+      if (response.statusCode == 401) {
+        developer.log('ERROR: Unauthorized (401)', name: 'TaskService');
+        throw Exception('Unauthorized');
+      }
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['success'] == true;
@@ -234,6 +249,11 @@ class TaskService {
         'Open tasks response status: ${response.statusCode}',
         name: 'TaskService',
       );
+
+      if (response.statusCode == 401) {
+        developer.log('ERROR: Unauthorized (401)', name: 'TaskService');
+        throw Exception('Unauthorized');
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -283,6 +303,11 @@ class TaskService {
         name: 'TaskService',
       );
 
+      if (response.statusCode == 401) {
+        developer.log('ERROR: Unauthorized (401)', name: 'TaskService');
+        throw Exception('Unauthorized');
+      }
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['success'] == true;
@@ -322,6 +347,11 @@ class TaskService {
         'Get task by ID response: ${response.statusCode}',
         name: 'TaskService',
       );
+
+      if (response.statusCode == 401) {
+        developer.log('ERROR: Unauthorized (401)', name: 'TaskService');
+        throw Exception('Unauthorized');
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

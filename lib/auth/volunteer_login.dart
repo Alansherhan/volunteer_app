@@ -77,16 +77,57 @@ class _LoginScreenState extends State<LoginScreen> {
           userRole = data['role'].toString();
         }
 
-        // Only allow volunteers to login to this app
-        if (userRole != 'volunteer') {
-          await prefs.clear();
-          _showErrorDialog(
-            'Access denied. Only volunteers can login to this app.',
-          );
+        // Check if user is a volunteer — block login in the public app
+        final userData = data['user'] as Map<String, dynamic>?;
+        final userRole1 = userData?['role']?.toString();
+
+        if (userRole1 == 'public') {
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                title: const Row(
+                  children: [
+                    Icon(Icons.block, color: Colors.red, size: 28),
+                    SizedBox(width: 8),
+                    Text(
+                      'Access Denied',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
+                ),
+                content: const Text(
+                  'Public accounts cannot log in to the volunteer app. Please use the public app instead.',
+                  style: TextStyle(fontSize: 15),
+                ),
+                actions: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
           return;
         }
 
-        await prefs.setString('role', userRole!);
+        await prefs.setString('role', userRole1!);
 
         await prefs.setString(kTokenStorageKey, data['token'] ?? '');
         await prefs.setString('email', email);

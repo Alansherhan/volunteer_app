@@ -185,6 +185,17 @@ class TaskModel {
 
   /// Get location from aid or donation request
   String? get location {
+    // First check task's own pickup/delivery address fields
+    // These are set directly on the task (e.g., for portal donation pickup tasks)
+    if (pickupAddress != null) {
+      final addr = _formatAddress(pickupAddress!);
+      if (addr != null) return addr;
+    }
+    if (deliveryAddress != null) {
+      final addr = _formatAddress(deliveryAddress!);
+      if (addr != null) return addr;
+    }
+
     // For aid requests
     if (aidRequest != null) {
       // First try formattedAddress (virtual field from backend)
@@ -266,6 +277,31 @@ class TaskModel {
       }
     }
 
+    return null;
+  }
+
+  /// Helper to format an address map into a readable string
+  String? _formatAddress(Map<String, dynamic> address) {
+    final parts = <String>[];
+    if (address['addressLine1'] != null &&
+        address['addressLine1'].toString().trim().isNotEmpty) {
+      parts.add(address['addressLine1'].toString());
+    }
+    if (address['addressLine2'] != null &&
+        address['addressLine2'].toString().trim().isNotEmpty) {
+      parts.add(address['addressLine2'].toString());
+    }
+    if (address['addressLine3'] != null &&
+        address['addressLine3'].toString().trim().isNotEmpty) {
+      parts.add(address['addressLine3'].toString());
+    }
+    if (address['pinCode'] != null &&
+        address['pinCode'].toString().trim().isNotEmpty) {
+      parts.add('- ${address['pinCode']}');
+    }
+    if (parts.isNotEmpty) {
+      return parts.join(', ');
+    }
     return null;
   }
 
