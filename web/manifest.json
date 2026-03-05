@@ -1,6 +1,6 @@
 {
-    "name": "volunteer_app",
-    "short_name": "volunteer_app",
+    "name": "Volunteer App",
+    "short_name": "Volunteer App",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
